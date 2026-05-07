@@ -1,0 +1,1838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Product Manager, Monetization · Strategic Brief · Kelvin Zee</title>
+<meta name="description" content="An outside-in monetization read on Anthropic: Claude is becoming a build-and-run runtime for customer-specific software, and the open question is which SaaS workflows actually move." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          // Stone palette REMAPPED for light-mode Anthropic Echo.
+          // Class names stay (bg-stone-950, text-stone-100, etc.) but values are inverted.
+          // High numbers = light surfaces; low numbers = dark text. Opposite of vanilla Tailwind.
+          stone: {
+            50:  '#ffffff', 100: '#141413', 200: '#2a2825', 300: '#141413',
+            400: '#6b6862', 500: '#6b6862', 600: '#807e77', 700: '#b0aea5',
+            800: '#e8e6dc', 850: '#ede9df', 900: '#f4f2ec', 950: '#f4f2ec'
+          },
+          accent:  '#d97757',  // Anthropic clay orange — replaces emerald-*
+          warning: '#6a9bcc'   // Anthropic accent blue — replaces amber-*
+        },
+        fontFamily: {
+          display: ['Poppins', 'system-ui', 'sans-serif'],
+          body: ['Lora', 'Georgia', 'serif'],
+          mono: ['JetBrains Mono', 'ui-monospace', 'monospace']
+        }
+      }
+    }
+  };
+</script>
+
+<style>
+  * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  html { scroll-behavior: smooth; }
+  body { background: #faf9f5; color: #141413; font-family: 'Lora', Georgia, serif; }
+
+  .font-display { font-family: 'Poppins', system-ui, sans-serif; letter-spacing: -0.02em; }
+  .font-body { font-family: 'Lora', Georgia, serif; }
+  .font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-feature-settings: 'zero' on, 'ss02' on; }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes pulseSoft { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+  .anim-fade-up { animation: fadeUp 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .anim-fade-in { animation: fadeIn 0.6s ease-out both; }
+  .anim-pulse-soft { animation: pulseSoft 3s ease-in-out infinite; }
+
+  /* Grain overlay neutralized for light-mode Anthropic Echo (brand is clean cream, no texture).
+     Class name preserved so existing JSX still resolves; ::after produces no visible effect. */
+  .grain-overlay { position: relative; }
+  .grain-overlay::after { content: none; }
+  .grain-overlay > * { position: relative; z-index: 1; }
+
+  .scrollbar-thin::-webkit-scrollbar { height: 6px; width: 6px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(120,120,120,0.25); border-radius: 3px; }
+
+  .editorial-rule { height: 1px; background: linear-gradient(90deg, transparent, rgba(20,20,19,0.14), transparent); }
+  .num-display { font-feature-settings: 'tnum' on, 'lnum' on; font-variant-numeric: tabular-nums lining-nums; }
+  .ring-inset-emerald { box-shadow: inset 0 0 0 1px rgba(217, 119, 87, 0.5); }
+
+  @media print {
+    body { background: white; color: black; }
+    .grain-overlay::after { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="root">
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;color:#d97757;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;">
+    <span style="opacity:0.6;animation:pulseSoft 1.4s ease-in-out infinite;">▸ Compiling brief …</span>
+  </div>
+</div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useMemo, useEffect } = React;
+
+/* ============================================================
+   ICON COMPONENTS — extend as needed
+   Lucide-style SVGs, drop-in additions safe.
+   ============================================================ */
+
+const I = ({ children, size = 16, className = '', stroke = 2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+       stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round"
+       className={className}>{children}</svg>
+);
+
+// Common icons — copy-paste more from lucide.dev as needed
+const Sparkles = (p) => <I {...p}>
+  <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
+  <path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/>
+</I>;
+const Check = (p) => <I {...p}><polyline points="20 6 9 17 4 12"/></I>;
+const X = (p) => <I {...p}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></I>;
+const ArrowDown = (p) => <I {...p}><line x1="12" x2="12" y1="5" y2="19"/><polyline points="19 12 12 19 5 12"/></I>;
+const Hash = (p) => <I {...p}><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></I>;
+const Lightbulb = (p) => <I {...p}><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></I>;
+const AlertTriangle = (p) => <I {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></I>;
+
+/* ============================================================
+   CONTENT DATA — REPLACE THE PLACEHOLDERS BELOW
+   ============================================================ */
+
+// Hero stats — 4 headline numbers
+const HERO_STATS = [
+  { num: '$30B', label: 'Annualized revenue, April 2026', sub: 'Sacra · ~$22B net by alt accounting' },
+  { num: '$2.5B', label: 'Claude Code ARR by Feb 2026', sub: 'Anthropic public messaging' },
+  { num: '2×', label: 'Paid subscriptions doubled in 2026', sub: 'TechCrunch, March 2026' },
+  { num: '5×', label: 'Pro-to-Max price gap, no intermediate tier', sub: 'claude.com/pricing' }
+];
+
+// Setup section — three context cards
+const SETUP_CARDS = [
+  { tag: 'The Surface Shift',
+    head: 'Each Claude release has pushed the product further from answering questions toward building, deploying, and running the software that answers them.',
+    body: 'Claude.ai launched as a chat surface. Claude Code reached $2.5B ARR by February 2026 with business subscriptions quadrupled year-to-date. Cowork, released January 2026, extended the surface to non-developers in Claude Desktop. Computer Use, March 2026, extended it again to direct browser and OS actions. Each step moves the product from telling you what to do toward doing it, and the unit being monetized changes with it.',
+    stat: '$2.5B Code ARR · Cowork Jan 2026 · Computer Use Mar 2026' },
+  { tag: 'The Hidden Stack',
+    head: 'SaaS vendors hide a runtime stack: hosting, auth, permissions, reliability, support, rollback, and cost visibility. That stack determines whether build-and-run displacement actually happens.',
+    body: 'A Claude-built tool that works for one user is a prototype. The same tool deployed for a team needs hosting, identity, role-based permissions, error recovery, observability, and someone reachable when it breaks. Without a credible answer for that layer, build stays inside the IDE and SaaS spend does not shift. The strategic question is which parts of the stack Anthropic owns directly and which run through partners.',
+    stat: 'Claude API + Vercel + Supabase: the partner stack already assembling (2026)' },
+  { tag: 'The Boundary',
+    head: 'The monetization question is which workflows actually move from rented SaaS seats into build-and-run, and which stay where they are.',
+    body: 'Internal dashboards, custom forms, lightweight CRM views, ad-hoc reporting, and one-off automations look like obvious build-and-run candidates. Multi-tenant compliance workloads, regulated data handling, deep enterprise SSO, and human-in-the-loop approval chains do not. The line between displacing and not-displacing is where the product roadmap and the packaging roadmap have to agree.',
+    stat: 'Mid-market companies run ~130 SaaS apps each; the long tail is the displacement target (BetterCloud State of SaaSOps)' }
+];
+
+// Analogy section — build-your-own runtime arc, five phases with the AI-native pivot
+const RUNTIME_PHASES = [
+  { id: 1, label: 'Excel and Access', period: '1990s–2000s', isPivot: false,
+    buyer: 'Non-developers built spreadsheet and database workflows that absorbed the long tail of vertical SaaS demand. Save-the-file was the runtime, and the unit was a single user with a finance, ops, or HR role.',
+    economic: 'Zero marginal cost to the user. License revenue accrued to Microsoft once; the workflow ran forever. The build-your-own long tail was massive but unmeasured.' },
+  { id: 2, label: 'Cloud SaaS reclaim', period: '2000s–2010s', isPivot: false,
+    buyer: 'Salesforce, Zendesk, Workday, and similar vendors won workflows back by offering hosted, multi-user, audit-trailed alternatives that Excel could not match.',
+    economic: 'Per-seat ARR scaled with the workforce. Vertical SaaS won the operational center. The build-your-own long tail shrank but never disappeared.' },
+  { id: 3, label: 'Low-code consolidation', period: '2010s–2020s', isPivot: false,
+    buyer: 'Notion, Airtable, Zapier, and Retool consolidated point tools (Trello, Asana, Coda, Make) by being more flexible while staying hosted and team-shareable.',
+    economic: 'Freemium-with-team-paid became the natural shape. Partner ecosystems extended the runtime. The middle of the market shifted from many tools toward fewer, more flexible ones.' },
+  { id: 4, label: 'AI-native build-and-run', period: '2024–2025', isPivot: false,
+    buyer: 'Cursor, Replit Agent, v0, Lovable, Bolt, and Claude Code. Describe workflow, generate interface, build logic, connect data, deploy. The runtime extends to the act of building, not just running.',
+    economic: 'Token-metered runtime. Per-workflow cost is the new unit, but the pricing model is still inherited from chat: monthly subscription, capped capacity, no clear consumption legibility.' },
+  { id: 5, label: 'The pivot question', period: '2026 onward', isPivot: true,
+    buyer: 'Whether AI-native runtimes can displace per-seat SaaS for the long tail at scale, given the hidden stack constraint. Buyers are testing one workflow at a time, watching for trust failures.',
+    economic: 'Whether token-metered, workload-metered, or seat-metered packaging captures the value, and how partners stitch the runtime stack credibly enough that the spend actually shifts. The packaging answer is not yet visible from outside.' }
+];
+
+const WORKS_BREAKS = {
+  works: [
+    'Each generation absorbs the long tail. The displacement pattern is recurring, not novel.',
+    'The hidden stack determines displacement rate. Excel won the long tail because save-the-file was good enough for a single user.',
+    'Build-your-own carries inherent trust. Users trust tools they built more than vendor products.',
+    'Workload-tiered packaging is the natural shape: free for personal, paid for team or production.',
+    'Partners extend the runtime, not the product. Vercel, Supabase, and Claude Code together are the modern Excel + Power BI + SharePoint.',
+    'Displacement is gradual, not catastrophic. Salesforce still exists despite Excel and Notion.'
+  ],
+  breaks: [
+    'Excel was free at the margin; Claude is metered per token, with consumption-variable cost. Fundamentally different surface.',
+    'Excel had 30 years of trust accumulation; Claude has 36 months. Hallucination risk is genuinely new.',
+    'The hidden stack got harder over time, not easier. Auth, observability, audit, and rollback are real product surfaces, not save-the-file.',
+    'Cloud SaaS already proved the reclaim works. The AI-native generation is not immune to the same dynamic.',
+    'Some workflows genuinely cannot move: multi-tenant compliance, regulated data, deep SSO, human approval chains.',
+    'The competitive frame for AI-native is wider than just SaaS. Cursor, Replit, v0, Lovable, and GitHub Copilot Workspace all compete for the same long tail.'
+  ]
+};
+
+// Architecture section — pricing ladder and the hidden runtime stack
+const PRICING_TIERS = [
+  { tier: 'Free',           price: '$0',            audience: 'Sample and try',     surfaces: 'Claude.ai chat (capacity-limited)',                       constraint: 'Strict daily message limits' },
+  { tier: 'Pro',            price: '$20 / mo',      audience: 'Individual prosumer', surfaces: '+ Claude Code, Cowork, Computer Use (preview)',           constraint: 'Weekly caps; peak-hour throttling 5–11am Pacific' },
+  { tier: 'Max 5×',         price: '$100 / mo',     audience: 'Heavy individual',    surfaces: 'Same surfaces, 5× the Pro capacity',                      constraint: 'Same caps at higher ceiling' },
+  { tier: 'Max 20×',        price: '$200 / mo',     audience: 'Power user',          surfaces: 'Same surfaces, 20× the Pro capacity',                     constraint: 'Same caps; highest single-user ceiling' },
+  { tier: 'Team Standard',  price: '$30 / seat / mo', audience: 'Small team',        surfaces: 'Pro features + admin console',                            constraint: 'Per-seat billing, monthly commit' },
+  { tier: 'Team Premium',   price: '$100 / seat / mo (annual)', audience: 'Larger team', surfaces: '+ advanced admin and security',                       constraint: 'Per-seat, annual commit' },
+  { tier: 'Enterprise',     price: 'Custom',        audience: 'Large org',           surfaces: 'All surfaces + SSO, SCIM, audit, vertical add-ons',       constraint: 'Negotiated contract' }
+];
+
+const PRODUCT_SURFACES = [
+  { name: 'Claude.ai',                           tagline: 'The chat surface. Reasoning, drafting, research. The original product, and the one the ladder was designed around.' },
+  { name: 'Claude Code',                         tagline: 'Developer-facing agent in CLI and IDE. $2.5B ARR by February 2026, business subscriptions quadrupled year-to-date. The build half of build-and-run for technical users.' },
+  { name: 'Claude Cowork',                       tagline: 'Non-developer agent inside Claude Desktop, launched January 2026. The build half for non-technical users; closest in shape to Notion or Airtable.' },
+  { name: 'Computer Use',                        tagline: 'Direct browser and OS actions, research preview from March 2026. The run half: Claude doing rather than telling.' },
+  { name: 'Claude Platform (API)',               tagline: 'Direct API access for developers building external products. Separate billing and consumption model from the consumer ladder; the canonical workload-metered surface.' }
+];
+
+const STACK_LAYERS = [
+  { layer: 'Inference and model',     status: 'First-party',     tone: 'first',   detail: 'Claude API and the models behind Claude.ai, Code, and Cowork.' },
+  { layer: 'Hosting and runtime',     status: 'Partner',         tone: 'partner', detail: 'Vercel marketplace path; customer-owned infrastructure; Code\'s runtime for ephemeral tools.' },
+  { layer: 'Auth and identity',       status: 'Mixed',           tone: 'partner', detail: 'Anthropic SSO for the consumer ladder; build-and-run deployments depend on the customer\'s identity stack.' },
+  { layer: 'Permissions and RBAC',    status: 'Partner',         tone: 'partner', detail: 'Supabase row-level security, customer-built, or unsolved at the artifact level.' },
+  { layer: 'Persistent storage',      status: 'Partner',         tone: 'partner', detail: 'Supabase, customer database, or stateless artifact.' },
+  { layer: 'Observability',           status: 'Unsolved-ish',    tone: 'unsolved', detail: 'LangSmith, Helicone, Datadog all serve fragments; no canonical Anthropic answer.' },
+  { layer: 'Reliability and rollback',status: 'Unsolved',        tone: 'unsolved', detail: 'Code generates artifacts; first-party deployment and rollback for those artifacts is not yet a product.' },
+  { layer: 'Cost visibility',         status: 'Partial',         tone: 'partner', detail: 'API has usage dashboards; consumer ladder has cap counters but no per-workflow cost view.' },
+  { layer: 'Support and SLA',         status: 'Tier-bound',      tone: 'partner', detail: 'Enterprise has dedicated support; Pro and Max default to community.' },
+  { layer: 'Audit and compliance',    status: 'Vertical-specific', tone: 'partner', detail: 'HIPAA via Healthcare; financial-services compliance via the new vertical.' }
+];
+
+// Field section — frontier model competition + build-and-run runtime competition
+const FRONTIER_PLAYERS = [
+  { player: 'OpenAI',
+    contest: 'Mass-market chat, code, voice, agents (ChatGPT Plus, Pro, Business, Enterprise)',
+    monetization: 'Subscriptions + ads (Plus, Search rollouts 2025-2026) + API + Enterprise',
+    differentiator: 'Distribution scale; ~900M ChatGPT WAU per public reporting',
+    risk: 'Cross-subsidy from ad revenue can support lower subscription price points' },
+  { player: 'Google (Gemini)',
+    contest: 'Workspace integration, Search distribution, Android',
+    monetization: 'Workspace seats + ads + GCP bundling',
+    differentiator: 'Distribution: ~750M Gemini app MAU; Workspace seat distribution',
+    risk: 'Workspace bundling makes Gemini effectively zero-marginal-cost for many enterprise buyers' },
+  { player: 'Anthropic',
+    contest: 'Frontier reasoning + Claude Code + Cowork + Computer Use + verticals',
+    monetization: 'Subscriptions + API + Enterprise; explicit no-ads commitment',
+    differentiator: 'Brand trust, transparent docs, build-and-run posture',
+    risk: 'Pricing architecture is the only structural lever; smaller margin for missteps',
+    isAnthropic: true },
+  { player: 'Other frontier (x.AI, Chinese labs, Mistral, Cohere)',
+    contest: 'Frontier performance, specialized verticals, geographies',
+    monetization: 'Mix: API + open-weight + state-aligned subsidies + bundled distribution (Grok via X)',
+    differentiator: 'Variable: X distribution, EU positioning, cost-competitive APIs, regional reach',
+    risk: 'Pricing pressure on API; secondary competitor on consumer subscription' }
+];
+
+const RUNTIME_PLAYERS = [
+  { player: 'Cursor',
+    contest: 'Developer build; AI-native IDE',
+    monetization: '$20/mo Pro, $40/mo Business, usage credits',
+    distribution: 'Word-of-mouth in developer community; per public reporting, ARR has crossed $300M',
+    stackOwnership: 'Wraps existing IDE (VSCode fork); developer\'s own deployment stack' },
+  { player: 'Replit Agent',
+    contest: 'Low-code build-and-deploy for non-developers',
+    monetization: 'Subscription + compute credits',
+    distribution: 'Education and indie-developer reach via Replit platform',
+    stackOwnership: 'First-party hosting, deployment, database; most vertically integrated' },
+  { player: 'GitHub Copilot Workspace',
+    contest: 'Workflow-shaped agent inside GitHub',
+    monetization: 'Per-seat in GitHub Enterprise',
+    distribution: 'Enterprise distribution via Microsoft and GitHub',
+    stackOwnership: 'Microsoft Azure runtime; deep enterprise SSO and audit' },
+  { player: 'Vercel v0',
+    contest: 'UI generation; React and Next.js scaffolding',
+    monetization: 'Free + Vercel platform fees on deploy',
+    distribution: 'Vercel platform; ~2M developers',
+    stackOwnership: 'First-party hosting, edge runtime; partner integrations downstream' },
+  { player: 'Lovable, Bolt, others',
+    contest: 'AI-native build-and-deploy for SMBs and prototyping',
+    monetization: 'Subscription with compute credits',
+    distribution: 'Direct-to-consumer; often X-driven growth',
+    stackOwnership: 'First-party hosting and database integration; emerging' },
+  { player: 'Claude Code',
+    contest: 'Developer build (CLI/IDE-agnostic); also non-developer via Cowork',
+    monetization: 'Pro $20 / Max $100-200 / Enterprise',
+    distribution: 'Anthropic distribution + partner integrations (Vercel, Supabase)',
+    stackOwnership: 'Inference first-party; runtime via partners',
+    isReference: true }
+];
+
+// Buyer shift section — three shifts on the buyer side
+const BUYER_SHIFTS = [
+  { tag: 'The role shift',
+    direction: 'From renter to builder',
+    body: 'The buyer is moving from someone who picks SaaS products from a catalog to someone who describes a workflow and gets a tool back. Renter-buyers have evaluation muscle: they compare vendors on features, support, security, and price. Builder-buyers need a different skill set: describe what they want, evaluate what they got, decide whether to keep it. The decision-making cycle is different, and so is the time horizon. A SaaS evaluation might take three months; a Claude-generated tool takes an afternoon. Anthropic\'s monetization architecture has to fit the afternoon timeline, not the procurement-cycle timeline.' },
+  { tag: 'The budget shift',
+    direction: 'From per-seat to runtime',
+    body: 'Per-seat budgets are sized for vendor catalogs; runtime budgets are sized for consumption. A SaaS line item is predictable: 50 seats × $20 per month is $1,000 per month, year over year, with renewal at twelve months. A runtime line item is consumption-shaped: it varies with how many tools the team builds, how often each tool runs, and how much each run costs. Finance teams already manage this shape for AWS and Snowflake, but they are not yet trained to budget it for general-purpose Claude usage. The translation problem is real, and it is the gating issue for enterprise displacement at scale.' },
+  { tag: 'The workflow shift',
+    direction: 'From vendor-standardized to team-customized',
+    body: 'When ten teams use the same Salesforce, the workflow is standardized by Salesforce. When ten teams build their own Claude tools, each team customizes the workflow to its own needs, and the standardization shifts from vendor-imposed to organization-imposed. The organizational consequence is real: less consistency across the company, more flexibility within each team, a different governance model, and a different audit trail. Whether that is a feature or a bug depends on the function and the regulatory context. For marketing operations and internal data analysis, customization is usually a feature. For finance close and HR compliance, it is usually a bug.' }
+];
+
+// Segments section — four buyer segments along the build-and-run displacement curve
+const SEGMENTS = [
+  { segment: 'Individuals',
+    whoBuilds: 'Solo prosumer, freelancer, indie',
+    displacementTarget: 'Personal productivity, indie workflows, light Notion / Calendly substitutes',
+    stackNeeds: 'Minimal; tool runs on own machine or share-link',
+    budget: 'Pro $20 / Max $100-200; consumer subscription',
+    packaging: 'Consumer ladder works directionally; the cliff is the issue' },
+  { segment: 'Small businesses (1-50)',
+    whoBuilds: 'One technical generalist or ops lead',
+    displacementTarget: 'SMB SaaS bundles, the core 10-30 subscriptions of a small operating business',
+    stackNeeds: 'Multi-user auth, basic admin and permissions, shared deployment',
+    budget: 'Pro + Team Standard mix; sometimes API direct',
+    packaging: 'Need SMB-shaped middle tier between consumer Max and Team',
+    isUnderserved: true },
+  { segment: 'Midsize teams (50-500)',
+    whoBuilds: 'Multiple builders across eng, ops, product, marketing',
+    displacementTarget: 'Long-tail workflow SaaS (Airtable, Retool, light BI, marketing-ops point tools)',
+    stackNeeds: 'Real auth (often SSO), RBAC, observability, basic audit; partners must be legible',
+    budget: 'Team Premium + API + builder subs',
+    packaging: 'Team Premium plus a consumption-based runtime add-on; bundling Vercel and Supabase via Anthropic simplifies procurement' },
+  { segment: 'Enterprise functions',
+    whoBuilds: 'Function-specific; varies sharply by department',
+    displacementTarget: 'Function-specific point tools, rarely the core system of record',
+    stackNeeds: 'Full enterprise: SSO, SCIM, audit, SOC2, HIPAA-equivalent depending on function',
+    budget: 'Enterprise contract; consumption negotiated',
+    packaging: 'Enterprise tier + vertical add-ons (Healthcare, Financial Services already exist); function-specific runtime SLAs' }
+];
+
+// Probe section — buyer × workflow displacement matrix
+const BUYER_PROFILES = [
+  { id: 'individual',  label: 'Individual',           buildCapacity: 80, stackTolerance: 80, complianceCapacity: 20, budgetShape: 'consumer' },
+  { id: 'smb',         label: 'Small business',       buildCapacity: 75, stackTolerance: 50, complianceCapacity: 40, budgetShape: 'consumer-leaning' },
+  { id: 'midsize',     label: 'Midsize team',         buildCapacity: 80, stackTolerance: 40, complianceCapacity: 70, budgetShape: 'hybrid' },
+  { id: 'enterprise',  label: 'Enterprise function',  buildCapacity: 85, stackTolerance: 20, complianceCapacity: 95, budgetShape: 'enterprise' }
+];
+
+const WORKFLOW_PROFILES = [
+  { id: 'dashboard',   label: 'Internal dashboard',          aiSuit: 85, stackComplex: 30, complianceReq: 20, consumptionShape: 'light'  },
+  { id: 'crm',         label: 'Lightweight CRM',             aiSuit: 70, stackComplex: 60, complianceReq: 40, consumptionShape: 'medium' },
+  { id: 'marketingops',label: 'Marketing-ops automation',    aiSuit: 85, stackComplex: 75, complianceReq: 30, consumptionShape: 'heavy'  },
+  { id: 'data',        label: 'Data analysis & reporting',   aiSuit: 85, stackComplex: 40, complianceReq: 50, consumptionShape: 'medium' },
+  { id: 'compliance',  label: 'Compliance & audit workflow', aiSuit: 40, stackComplex: 90, complianceReq: 95, consumptionShape: 'heavy'  }
+];
+
+// Packaging fit lookup: budgetShape × consumptionShape
+const PACKAGING_FIT = {
+  'consumer':         { light: 85, medium: 65, heavy: 40 },
+  'consumer-leaning': { light: 65, medium: 50, heavy: 35 },
+  'hybrid':           { light: 80, medium: 75, heavy: 60 },
+  'enterprise':       { light: 90, medium: 90, heavy: 85 }
+};
+
+// Verdicts — 4 buyers × 5 workflows = 20 cells. Indexed [buyerIndex][workflowIndex].
+const VERDICTS = [
+  // Individual
+  [
+    { template: 'A', title: 'Strong fit',
+      text: 'Strong displacement candidate. Pro tier with Cowork covers the build, and the tool runs locally or via simple share-link. The limiting factor is the cliff to Max for users who build five or more tools. Move: close the Pro-to-Max gap or add a Pro Plus tier.' },
+    { template: 'F', title: 'Plausible with caveats',
+      text: 'Plausible workflow with caveats. AI handles lightweight CRM well, but the share-link pattern only works for a few collaborators. The friction is multi-user auth at this segment. Move: a one-click multi-user pattern via Supabase Auth as a partner-recommended path.' },
+    { template: 'C', title: 'Packaging-gated',
+      text: 'Workflow is ready, packaging is the gap. Marketing-ops is heavy-consumption work; a Pro user running it on Code burns through the cap before month-end. Move: the Pro Plus tier from H1 in §08, sized for moderate-volume builders.' },
+    { template: 'A', title: 'Strong fit',
+      text: 'Strong displacement candidate. Claude handles data analysis well, and Pro tier capacity is usually sufficient for personal or freelance work. The limiting factor is sharing the output with clients securely. Move: a partner-recommended thin hosting path for client-facing reports.' },
+    { template: 'E', title: 'Not yet displaceable',
+      text: 'Displacement does not happen here. Compliance workflows require organizational context and audit trail an individual builder cannot provide. Watch for capability progress on audit-trail generation before retesting at this segment.' }
+  ],
+  // Small business
+  [
+    { template: 'A', title: 'Strong fit, packaging-pending',
+      text: 'Strong displacement candidate. SMB internal dashboards are exactly the build-your-own pattern Excel absorbed; Claude is the next step. The friction is admin and shared deployment under current packaging. Move: SMB-shaped middle tier between consumer Max and Team Standard.' },
+    { template: 'C', title: 'Packaging-gated',
+      text: 'Plausible workflow, packaging-friction. Anthropic plus Supabase reaches multi-user; the gap is packaging. Pro across the team or Team Standard at $30 per seat both lose information about how the team actually uses the tool. Move: SMB middle tier with consumption-based runtime add-on.' },
+    { template: 'C', title: 'Packaging-gated',
+      text: 'Workflow is ready, packaging is the gap. Marketing-ops automation is credible at SMB scale, especially when the alternative is a $200 per month point tool. Per-seat does not match the consumption shape. Move: a workload add-on on top of an SMB middle tier.' },
+    { template: 'C', title: 'Packaging-gated',
+      text: 'Workflow is ready, packaging is the gap. Data analysis at SMB scale beats a $200 per month BI tool serving five people. Same SMB packaging seam: per-seat does not match consumption. Move: SMB middle tier plus consumption add-on, plus a partner path for shared dashboards.' },
+    { template: 'D', title: 'Compliance-bounded',
+      text: 'Displacement is limited by compliance constraints. SOC2 evidence, basic HIPAA, and vendor audits need audit trail and segregation-of-duties that build-and-run does not yet provide. SMBs continue to rely on incumbent vertical SaaS. Watch for vertical-specific capability progress.' }
+  ],
+  // Midsize team
+  [
+    { template: 'A', title: 'Strong fit',
+      text: 'Strong displacement candidate. Claude Code or Cowork plus Vercel deploy fits internal dashboards at midsize. Team Premium covers the seats. The limiting factor is observability: midsize teams want to see who built what and how often. Move: partner-recommended observability path bundled with Team Premium.' },
+    { template: 'F', title: 'Plausible with caveats',
+      text: 'Plausible workflow with caveats. Lightweight CRM at midsize is workable, but the question is whether a Claude-built CRM survives a sales hire who expects standardized pipeline reporting. The gap is feature creep. Move: position as a transitional pattern, with a partner migration path to a vendor CRM if it scales.' },
+    { template: 'A', title: 'Strong fit, partner-mediated',
+      text: 'Strong displacement candidate, partner-mediated. Claude Code handles the build, Supabase handles data and auth, Vercel handles deployment. The gap is consumption-shaped runtime cost on top of Team Premium. Move: a workload add-on to Team Premium plus a marketplace path that bundles the partner integrations.' },
+    { template: 'A', title: 'Strong fit',
+      text: 'Strong displacement candidate. AI handles the work, Team Premium covers the seats, partner stack is mostly available. The gap is observability and reporting governance, both partner-stitchable. Move: ship the partner stack as a marketplace path; instrument adoption.' },
+    { template: 'D', title: 'Compliance-bounded',
+      text: 'Displacement is limited by compliance constraints. Audit trail, segregation-of-duties, and human approval chains keep this workflow on incumbent vertical SaaS. Midsize teams in regulated industries should plan for Enterprise vertical add-ons at the next contract cycle.' }
+  ],
+  // Enterprise function
+  [
+    { template: 'A', title: 'Strong fit',
+      text: 'Strong displacement candidate. Enterprise internal dashboards are the build-your-own long tail Excel absorbed thirty years ago. Enterprise contract covers seats, audit, and partner stack. The limiting factor is internal procurement velocity, not packaging. Move: instrument adoption inside Enterprise contracts and surface success patterns.' },
+    { template: 'F', title: 'Plausible with caveats',
+      text: 'Plausible with caveats. Lightweight CRM inside an Enterprise function (departmental tracking outside the system of record) is credible. The friction is governance: a Claude-built tool needs to coexist with corporate Salesforce without leaking data. Move: partner-recommended pattern for departmental tools that integrate with the system of record.' },
+    { template: 'B', title: 'Stack-gated',
+      text: 'Plausible workflow, hidden-stack gated. Enterprise marketing-ops automation requires SOC2 deployment paths, audit logging, and observability beyond what partner-stitching cleanly provides. Enterprise covers the legal surface; the runtime stack does not. Move: first-party hosting and observability inside Enterprise, or a deeper partner contract meeting enterprise audit standards.' },
+    { template: 'A', title: 'Strong fit',
+      text: 'Strong displacement candidate. Data analysis inside Enterprise functions is one of the most credible build-and-run patterns at scale. The limiting factor is internal data access controls. Move: ship as a reference architecture; partner with internal data platforms (Snowflake, Databricks) for canonical access patterns.' },
+    { template: 'D', title: 'Partial via verticals',
+      text: 'Displacement is partial via vertical add-ons. Healthcare and Financial Services do real work, but the displacement is selective: regulated systems of record stay on incumbent vendors, while specialized compliance reporting and case-management workflows can move. Move: extend the vertical pattern to two or three additional regulated functions; treat each as a contracted package.' }
+  ]
+];
+
+// Framework section — illustrative moves (each tagged Hypothesis), sequenced
+const FRAMEWORK_MOVES = [
+  { id: 'M1',
+    name: 'Consumption legibility surface',
+    type: 'UX surface (not a tier)',
+    sequencePriority: 1,
+    isPrerequisite: true,
+    description: 'In-app dashboard inside Claude.ai showing per-tool inference cost, build frequency, weekly-cap progress, and projected month-end usage. Summary-first with optional drill-down. (Illustrative: cost shown rounded to nearest $1, drill-down to per-tool detail.) Form factor matters more than data accuracy at the start.',
+    targets: 'All segments. Prerequisite for every other move in this framework.',
+    operationalizes: '§08 Hypothesis C (the "Start here" hypothesis).',
+    specificRisk: 'Done wrong, telemetry suppresses build behavior or creates anxiety. The right form is summary-first, not detail-first.' },
+  { id: 'M2',
+    name: 'Pro Plus tier',
+    type: 'Subscription tier (consumer ladder)',
+    sequencePriority: 2,
+    description: 'Intermediate consumer tier between Pro at $20 and Max 5× at $100. Illustrative price: $45-55/mo (range pending data). Designed for individual builders who hit weekly caps building roughly five or more tools per month (illustrative threshold pending cohort data). Same surfaces as Pro, with capacity sized between Pro and Max 5× (ratio pending unit-economics modeling).',
+    targets: 'Individual prosumer segment.',
+    operationalizes: '§08 Hypothesis A at the individual scale.',
+    specificRisk: 'Anchor effects may pull users toward Pro Plus who would otherwise have upgraded organically to Max, depressing ARPU. First introduction should be a save-offer for capped Pro users in their churn moment, not a net-new acquisition tier.' },
+  { id: 'M3',
+    name: 'SMB workgroup tier',
+    type: 'Subscription tier with bundled partner stack',
+    sequencePriority: 3,
+    description: 'Intermediate tier between consumer Max ($200/mo single-user) and Team Standard ($30/seat). Illustrative price: $300-400/mo flat for up to ten users (range pending data). Includes admin console, shared deployment via Vercel marketplace path, multi-user auth via Supabase integration, and basic observability. Targets the SMB segment that currently falls through the packaging gap between Max and Team.',
+    targets: 'Small businesses (1-50).',
+    operationalizes: '§08 Hypotheses A + B at the SMB scale (displacement gated by hidden stack).',
+    specificRisk: 'SMB pricing is the most uncertain parameter in this framework. The illustrative range may shift materially based on cohort modeling. Partner-bundled stack requires partner contract terms; revenue-share affects realized margin.' },
+  { id: 'M4',
+    name: 'Workload add-on for Team Premium',
+    type: 'Consumption-shaped add-on (not a replacement for per-seat)',
+    sequencePriority: 3,
+    description: 'A runtime credit pool that sits on top of per-seat Team Premium. Illustrative price: a per-million-token rate or per-agent-session-hour rate, parameter pending data. Lets midsize teams deploy production tools without hitting per-seat ceiling artificially. Exposes the consumption legibility surface (Move 1) at the team admin level. Runs parallel to Move 3 in the same wave.',
+    targets: 'Midsize teams (50-500). Pilot cohort only.',
+    operationalizes: '§08 Hypothesis B + D as a hybrid test (workload-shaped pricing on top of per-seat, before any pure-consumption transition).',
+    specificRisk: 'This is the controlled test for Hypothesis D. Should not be expanded beyond a pilot cohort until 12-month retention and bill-shock signal are clear. Requires Move 1 deployed before pilot starts; without consumption legibility, the add-on can produce surprise bills.' }
+];
+
+const HOLD_CONSTANT = [
+  'The no-ads commitment as a public boundary on monetization design.',
+  'Avasare\'s April 22 commitment to communicate subscriber-affecting changes directly, before docs and pricing pages.',
+  'The transparent-docs reputation that makes Anthropic\'s existing pricing legible.',
+  'The Free tier as the top of the consumer funnel; no changes to its existence or core capability scope.',
+  'The Enterprise tier\'s vertical add-on path (Healthcare, Financial Services), which is the working model for compliance-bounded displacement.'
+];
+
+const STRUCTURAL_CHANGE = [
+  'Ship Move 1 (consumption legibility surface) as the prerequisite for any other monetization work. Until it lands, every later move is more risky than it needs to be.',
+  'Close the Pro-to-Max cliff with Move 2 (Pro Plus), introduced first as a save-offer rather than an acquisition tier.',
+  'Close the consumer-Max-to-Team-Standard seam with Move 3 (SMB workgroup tier) and the bundled partner stack that comes with it.',
+  'Introduce consumption-shaped pricing as Move 4 (add-on, not replacement) on Team Premium for a pilot cohort, to begin validating Hypothesis D without committing to a full per-seat-to-consumption transition.'
+];
+
+const TEST_FIRST = [
+  'A/B test of consumption-legibility visualization on the in-app account page: no visualization vs. summary vs. drill-down. Track support-ticket volume around billing surprises and build behavior (tools created per week) before and after.',
+  'Save-offer test of Move 2 (Pro Plus) for capped Pro users in their churn moment, with explicit communication that this is an experiment. Measure 90-day retention and conversion-from-cap-event.',
+  'Pilot cohort of Move 3 (SMB workgroup tier) with 50-100 small businesses, measured against a control of SMBs on existing Pro + Team Standard mix. Track 12-month retention and ARPU.',
+  'Pilot cohort of Move 4 (workload add-on) for ten to twenty midsize teams already on Team Premium, with consumption-legibility surface deployed first. Measure bill-shock incidents, consumption pattern, and 12-month renewal.',
+  'Pre-flight "would we be embarrassed if this leaked" review for any test affecting existing paying subscribers, before the test begins. This is the explicit pattern that the April 21 incident makes load-bearing.'
+];
+
+// Validation Plan section — three phases (Days 1-30 / 31-60 / 61-90) and a What-I-would-not-do panel
+const VALIDATION_PHASES = [
+  { id: 'P1',
+    phase: 'Phase 1',
+    window: 'Days 1-30',
+    label: 'Listen and instrument',
+    actions: [
+      { name: 'Audit cohort economics',
+        body: 'Build the single source of truth on gross margin per user by tier, by product surface, and by 30/60/90-day tenure. Cross-cut against churn cohort to identify the build-volume threshold at which a Pro user becomes economically negative on Opus workloads. The output is a working internal dashboard, not a slide deck.' },
+      { name: 'Map the public promise surface',
+        body: 'Read every marketing page, every docs page, every help-center FAQ, and every support-macro response that touches pricing or limits. Catalog explicit commitments (no-ads, weekly-cap rules, the April 22 communication commitment) and implicit ones (what users have come to expect from the experience). This is the "what would we be embarrassed to violate" baseline.' },
+      { name: 'Inventory in-flight pricing experiments',
+        body: 'Catalog every active A/B test that touches paying subscribers. Apply the leak-test framework to each: would this land like April 21 if the change leaked before the comms? Halt or reframe any test that fails the leak-test until the comms are pre-staged.' },
+      { name: 'Instrument build-and-run telemetry',
+        body: 'Stand up the internal data pipeline that Move 1 (consumption legibility) will eventually surface to customers. Per-tool inference cost, build frequency, cap-progress telemetry, all tagged by segment and tier. Even before the customer-facing UX ships, the internal data pipeline starts compounding.' }
+    ] },
+  { id: 'P2',
+    phase: 'Phase 2',
+    window: 'Days 31-60',
+    label: 'Customer interviews',
+    actions: [
+      { name: 'Top-quartile interviews',
+        body: 'Twenty to thirty interviews with paying Pro and Max users in the top quartile of build behavior. What did they build in their first 30, 60, and 90 days? Which products did they discover when? What would have prompted them to upgrade tier earlier than they did? This is where the §06 activation hypothesis gets calibrated against real usage stories.' },
+      { name: 'Churn interviews',
+        body: 'Twenty to thirty interviews with recently-churned Pro and Max users. Segment the responses by reason: model performance, deployment friction, cost surprise, or a better alternative. The relative volume of each reason directly tests §08 hypothesis B (whether stack friction or model gaps drive churn).' },
+      { name: 'Support-ticket triage',
+        body: 'Read every support ticket from the last 90 days that touches billing, caps, or pricing. Identify the top five friction patterns by volume. Cross-reference with social sentiment (X, Hacker News, Reddit) for the same period, including the post-April 21 thread analysis. Where the ticket pattern and the public sentiment diverge is where the public signal is misleading us.' },
+      { name: 'Finance-team buyer interviews',
+        body: 'Ten to fifteen interviews with finance-team buyers at SMB and midsize companies (current customers and target prospects). How do they budget AWS and Snowflake today? Would Claude get the same treatment? What would make consumption-shaped pricing legible to procurement and to month-end close? Direct test of §08 hypothesis D\'s core assumption.' }
+    ] },
+  { id: 'P3',
+    phase: 'Phase 3',
+    window: 'Days 61-90',
+    label: 'Fake-door tests',
+    actions: [
+      { name: 'Pro Plus save-offer fake-door',
+        body: 'Build a save-offer flow shown to a small cohort of capped Pro users in their churn moment. The offer presents Pro Plus at the illustrative price range from §10 Move 2. Measure take rate, decline reason, and 90-day downstream retention. The save-offer framing means the test affects users who were leaving anyway, which keeps the trust risk bounded.' },
+      { name: 'SMB workgroup tier fake-door',
+        body: 'Build a landing page for Move 3 with the illustrative price and bundled-stack copy. Drive a controlled spend of paid acquisition to it. Measure hand-raise rate against an equivalent paid-traffic baseline directed to Team Standard. No tier actually exists; the test surfaces demand without commitment.' },
+      { name: 'Workload add-on fake-door',
+        body: 'Build an in-product upsell shown to a controlled cohort of Team Premium teams. Present the workload add-on with illustrative pricing. Measure opt-in rate, segment composition of opters, and follow-up qualitative on what they would actually use it for. The qualitative is more important than the quantitative at this stage.' },
+      { name: 'Consumption-legibility live A/B',
+        body: 'Ship the smallest-possible build-and-run consumption surface (summary-only, no drill-down) to a 5% cohort of Pro and Max users. Measure support-ticket delta around billing surprises, build behavior change (tools created per week), and NPS impact on the cohort. This is the only Phase-3 test that affects existing subscribers; it has the strictest leak-test pre-flight.' }
+    ] }
+];
+
+const WONT_DO = [
+  'Ship any public-facing new tier. Pro Plus, SMB workgroup, and the workload add-on stay as fake-door tests. Even if the tests look promising at day 89, public commitment waits for the second-quarter cohort signal.',
+  'Change the Pro $20 price anchor without explicit comms-team coordination and a leak-test review. The $20 anchor is part of what the brand promises. Shifting it without pre-aligned messaging is the same trust risk as April 21, and the messaging takes longer to align than the test takes to run.',
+  'Run any A/B test affecting existing paying subscribers without the "would we be embarrassed if this leaked" pre-flight review. April 21 is the explicit reason. The pre-flight is a gate, not a checkbox.',
+  'Commit to a consumption-pricing transition for Team Standard or Team Premium customers. Move 4 is a pilot add-on for Team Premium teams that opt in. The broader consumption transition (full per-seat-to-consumption shift) stays out of scope until pilot cohort data is in hand and §08 hypothesis D has an evidence base.'
+];
+
+// Open Questions section — 12 questions in 3 thematic groups
+const OPEN_QUESTIONS = [
+  { id: 'G1',
+    label: 'Data I cannot see externally',
+    questions: [
+      { title: 'Cohort economics by tier and surface',
+        body: 'What is gross margin per user by tier, by product surface, and by usage type? Specifically, at what build volume does a Pro user become economically negative on Opus workloads, and how does that threshold shift with each model release?' },
+      { title: 'Free-to-paid funnel by surface',
+        body: 'What are the actual conversion rates from Free to Pro to Max, segmented by which products users tried in their first session, their first week, and their first month? Public coverage describes Cowork, Code, and Computer Use as documented drivers, but the specific funnel data and segment composition is not visible externally.' },
+      { title: 'Activation pattern at 0-90 days',
+        body: 'What does the 0-90 day activation pattern look like for paying subscribers, segmented by surface and segment? Specifically, which features adopted in days 0-30 best predict 12-month retention and tier movement? §06\'s hypothesis is anchored on the Prime analog; the calibration data is internal.' },
+      { title: 'Build-and-run share of revenue',
+        body: 'What share of Anthropic\'s revenue comes from build-and-run-shaped workloads (Code, Cowork, Computer Use) versus traditional chat consumption versus API direct versus vertical Enterprise contracts? The composition matters for how seriously to treat the build-and-run thesis at portfolio scale.' }
+    ] },
+  { id: 'G2',
+    label: 'Product strategy I cannot infer',
+    questions: [
+      { title: 'How is the no-ads commitment operationalized',
+        body: 'When a pricing test could realize meaningful revenue but might benefit from behavioral targeting or attribution data, who has the decision rights and what is the threshold for "this crosses the no-ads boundary"? The Super Bowl ads made the public position explicit; the internal operationalization is not visible.' },
+      { title: 'How is the build-and-run thesis framed internally',
+        body: 'Is the working framing "Claude is a chat product with agents bolted on" or "Claude is becoming a software-creation runtime"? The packaging implications differ materially, and the internal framing determines which hypothesis in §08 is treated as central versus peripheral.' },
+      { title: 'Hidden-stack ownership posture',
+        body: 'What is the strategic intent on the runtime stack? More first-party (hosting, observability, deployment), deeper partner relationships (Vercel, Supabase, observability vendors), or a calibrated mix by segment? The answer reshapes Move 3 and Move 4 in §10 directly.' },
+      { title: 'Cowork against Computer Use as the consumer-side wedge',
+        body: 'They target different non-developer populations, and the conversion mechanics are likely different. Which is the higher-priority conversion surface today, and how does that priority show up in the roadmap, the pricing-page emphasis, and the activation flows?' }
+    ] },
+  { id: 'G3',
+    label: 'Operating model I cannot map',
+    questions: [
+      { title: 'Decision rights post-April 21',
+        body: 'What changed in the decision rights and review rhythms between Growth, Pricing, Brand, Comms, and Trust and Safety after April 21? What is the operating cadence for pricing experimentation today, and where does the new pre-flight review sit in that cadence?' },
+      { title: 'Boundaries with API Pricing and Enterprise Sales',
+        body: 'Where does the consumer-and-team Monetization PM role end and the API Pricing team begin? Where does Enterprise Sales own the pricing surface and where does Monetization? The friction points are where strategy gets executed; from outside, the boundaries are not visible.' },
+      { title: 'Experimentation infrastructure and cycle time',
+        body: 'What is the cycle time from hypothesis to ship-to-cohort today? What is the threshold for an experiment that affects paying subscribers versus an experiment that runs against net-new users only? The Phase-3 fake-doors in §11 assume a working experimentation surface; whether that surface exists at the velocity §11 requires is an open question.' },
+      { title: 'Who owns the bill-trust signal',
+        body: 'Specifically the "would we be embarrassed if this leaked" pre-flight review. Is it a formal gate, a cultural norm, or something in between? Post-April 21, the answer to this question shapes what monetization work is even runnable in the first place.' }
+    ] }
+];
+
+// Hypotheses (the four-lens hypothesis frame from the Voice Guide)
+const HYPOTHESES = [
+  {
+    id: 'A',
+    title: 'A meaningful share of long-tail per-seat SaaS spend may move into Claude subscriptions for specific workflow categories (internal dashboards, custom forms, lightweight CRM views, ad-hoc reporting, one-off automations), though not for compliance-heavy or audit-heavy ones.',
+    summary: 'The build-your-own runtime pattern (Excel, Access, Notion, Airtable) has repeatedly absorbed the long tail of SaaS workflows, generation by generation. Claude is plausibly the next iteration of that pattern. The question is which workflow categories actually move in 2026-2027, on whose runtime, and which stay where they are.',
+    why: 'The displacement is recurring, not novel. The cost of building one-off tools has fallen by orders of magnitude with each generation of build-your-own runtime, and AI-native generation removes the technical-skill barrier that kept the previous generations bounded to relatively-technical users. Computer Use, Cowork, and Code are documented drivers of new paid subscriptions, which suggests the pattern is already starting at the consumer and prosumer scale. Mid-market companies running ~130 SaaS apps each have a real long-tail surface that can plausibly move.',
+    risk: 'The previous generations of build-your-own runtime did not displace category-defining vertical SaaS (Salesforce, Workday, Zendesk) wholesale, and there is no reason to assume Claude will be different. AI-native build also has trust constraints Excel did not have: hallucination risk, audit trail problems, and the inability to retrain workflows on internal compliance contexts. The displacement could turn out to be smaller than the analogy suggests, or much slower (5-10 years rather than 2-3).',
+    validate: 'Cohort analysis: track build-and-run paying users and ask, by user-month, how many Claude-built tools they use against how many SaaS subscriptions they keep active. Customer development with paying SMB customers about which subscriptions they have already cancelled or downgraded since starting Claude. A controlled survey across paying users of which workflow categories they have moved fully to Claude, partially, or not at all. Look at retention and expansion in cohorts that hit certain build-volume thresholds in their first 90 days (ties to §06 activation).',
+    confidence: 'High as a directional pattern claim (the displacement arc is recurring and the pattern transfers). Medium on the timeline (the magnitude question of "how much, how fast" is genuinely open). Low on specific category prediction (some of the categories named will move and others will not, and the order is hard to predict from outside).',
+    confidenceTone: 'emerald'
+  },
+  {
+    id: 'B',
+    title: 'The hidden runtime stack (hosting, auth, permissions, reliability, observability, support, rollback, cost visibility) could be the rate-limiting factor for build-and-run displacement, more than model intelligence is.',
+    summary: 'Customers who churn from build-and-run probably churn because the auth flow is broken, the rollback path is missing, or the cost is unclear, not because the model was wrong. If true, the displacement rate is gated by stack legibility, which means partner integrations and first-party runtime work matter more than further model gains for monetization growth.',
+    why: 'Excel won the long tail because save-the-file was good enough. Notion and Airtable won project workflows because they solved the multi-user surface natively. The pattern is consistent: each generation\'s build-your-own runtime is gated by the hidden stack constraint, not by the build tool itself. Vercel and Supabase are already partner-stitching with Claude, which suggests Anthropic recognizes this. The strategic question is how much of the stack to own first-party against partner-stitch against leave for the customer to assemble.',
+    risk: 'The model could still be the bottleneck for many workflows: subtle reasoning failures, hallucinations on specific domains, or capability ceilings that limit which workflows are buildable in the first place. If model improvements continue to expand the capability surface (Opus 4.7 already runs sessions roughly 3× longer than 4.6), then model investment may yield more displacement than stack investment per dollar. The framing also assumes the customer cares about the stack legibly; many SMB buyers are happy to cobble together partner integrations as long as it works.',
+    validate: 'Customer development: ask churned build-and-run users why they left, segmented by reason (model performance vs. deployment friction vs. cost surprise vs. better alternative). Compare churn rates between users who deploy Claude-built tools through Anthropic-recommended partner paths (Vercel, Supabase) and self-assembled stacks. A/B test partner-stitched tools (one-click deploy via Vercel marketplace) against self-deploy and measure 30-day retention. Survey paying users about which hidden-stack layers they would pay extra for and which they would tolerate as DIY.',
+    confidence: 'High as a structural claim (the build-your-own pattern has consistently been gated by the hidden stack). Medium as a quantitative comparison (whether stack work yields more displacement than model work per dollar invested is genuinely uncertain). Variable by segment (high for SMB and midsize where stack assembly is real friction; lower for individuals who do not need a stack).',
+    confidenceTone: 'amber'
+  },
+  {
+    id: 'C',
+    title: 'Build-and-run consumption legibility, meaning making both what users build and what each build costs visible inside the product, is the highest-confidence near-term move that does not require restructuring anything.',
+    summary: 'Before any packaging change lands, both the user and Anthropic need a clearer picture of build-and-run usage. Today, the consumer ladder shows weekly cap counters but does not show per-tool inference cost, build frequency, or workflow breakdown. Adding that visibility builds the data infrastructure that every later monetization decision will depend on, and it builds it without changing a single price.',
+    why: 'April 21 was a transparency event, not a pricing event. The reversal happened in 24 hours specifically because the change had not been communicated in a legible way, and Avasare\'s April 22 commitment to communicate future changes directly is now part of the architecture. Building a legible build-and-run consumption surface is the operational version of that commitment. It is also a precondition for any later structural change: hypothesis D cannot be tested without the data infrastructure that hypothesis C builds. The Supabase Spend Cap pattern shows users tolerate a complex meter when they trust they will not be surprised at month-end.',
+    risk: 'Consumption telemetry that is too granular overwhelms consumer-grade users. Most Pro subscribers do not want to think about per-tool cost; they want to know they are not about to get a $400 bill. Done wrong, legibility creates anxiety rather than trust. The right form factor is summary-first with optional drill-down, and getting that right is product work, not just data work. There is also a risk that visible cost actively suppresses build behavior: a user who can see what each build costs may build less, even when the build is economic for them.',
+    validate: 'User research with current Pro and Max users: do they understand their current usage, and can they predict whether they are about to hit a cap? A/B test of consumption visualization treatments on the in-app account page (no visualization vs. summary vs. detailed drill-down). Track support-ticket volume around billing surprises before and after introduction. Look at the Supabase Spend Cap activation and conversion data, modeled or obtained, as one calibration point for how consumer-grade users actually interact with explicit caps. Measure build behavior (tools created per week) before and after legibility introduction to test the suppression risk.',
+    confidence: 'High as an operational move (the April 22 commitment essentially obligates this work, and it has a low downside surface). Medium as a direct conversion lever (legibility on its own probably does not sell more Max subscriptions). High as a sequencing claim (this lands before any structural pricing change in hypothesis D, which would otherwise lack the data infrastructure to validate against).',
+    confidenceTone: 'emerald',
+    isStartingPoint: true
+  },
+  {
+    id: 'D',
+    title: 'Per-seat pricing may break structurally for build-and-run, and the natural monetization unit could be workload-shaped consumption rather than per-user seats; this is a structural change that should follow hypothesis C, not precede it.',
+    summary: 'A single Claude-built tool used by twelve people is not twelve seats of value; it is one workflow with twelve consumers. AWS, Vercel, and Supabase all charge by consumption for this reason. Per-seat pricing is what enterprise buyers know how to budget; consumption pricing is what build-and-run actually costs. The transition between the two is the boldest available structural move, and it is the one most likely to require internal data to calibrate correctly.',
+    why: 'The economics of a workflow-shaped product are different from the economics of a per-seat product. A team that builds five workflows used by ten people each is not the same as a team of fifty seats; it is a team of five workloads. Charging by seat in the first case loses information that pricing should reflect. The infrastructure analogues (AWS, Vercel, Supabase) all converged on consumption-based pricing for the same structural reason. Anthropic\'s API surface is already consumption-based; the question is whether and how the consumer and team ladders follow.',
+    risk: 'Consumption pricing is harder to budget, harder to forecast, and harder to sell into procurement. Per-seat won the SaaS era because it is legible to finance teams. A premature transition to consumption pricing on the consumer or team ladder could produce bill shock, churn, and a brand-trust event of the same shape as April 21. The math is also genuinely uncertain: workload-shaped pricing may produce lower realized revenue than per-seat for many segments, particularly midsize teams where 50-500 seats × per-seat would otherwise carry the contract. There is no current internal-data view from outside Anthropic that resolves this.',
+    validate: 'Internal cohort analysis: model what current Team Standard and Team Premium customers would pay under three pricing scenarios (current per-seat, hybrid seat-plus-consumption, pure consumption). Customer development with finance-team buyers about how they actually budget AWS and Snowflake today and whether they would budget Claude the same way. Pilot a consumption-shaped add-on to Team Premium for a small cohort, measure 12-month renewal and ARPU. Critically: this should not be tested until hypothesis C has built the consumption-legibility surface that lets customers see what they would be charged.',
+    confidence: 'High as a structural diagnosis (per-seat is genuinely mismatched to workload-shaped consumption). Medium as a near-term move (the transition is hard to execute without bill-shock risk). Low as a 2026-2027 ship target (the data infrastructure to calibrate correctly does not yet exist publicly, which is why this hypothesis is structurally downstream of hypothesis C).',
+    confidenceTone: 'amber'
+  }
+];
+
+// Career arcs — three rows in §13
+const CAREER_ARCS = [
+  { era: 'Dec 2015 – Jan 2017',
+    company: 'T-Mobile',
+    role: 'Senior Product Manager, Postpaid Subscription Product',
+    relevance: 'Led the postpaid subscription product through the metered-to-unlimited transition (T-Mobile ONE, JUMP!), the same arc Anthropic is now navigating in reverse for the agent era.',
+    wins: ['Postpaid base scaled from 56.8M to 75.6M associated with T-Mobile ONE and JUMP! packaging work',
+           'Owned product strategy for JUMP!, device financing, insurance, and mobile security; ~60% JUMP! attach rate',
+           'Built differentiated value bundles (Netflix, international roaming, inflight Wi-Fi) on top of unlimited'],
+    tieIn: 'The packaging-architecture transition Anthropic is asking this role to lead, in a different industry but the same shape.' },
+  { era: 'Jan 2017 – Mar 2022',
+    company: 'T-Mobile',
+    role: 'Senior Manager, Customer Engagement Product Management',
+    relevance: 'Led the Billing & Benefits digital transformation across web, app, and paper bill: bill-trust at consumer scale through a vendor migration (AMDOCS to BriteBill) and a customer migration (Sprint to T-Mobile).',
+    wins: ['Mintel Best Wireless Billing 2019; highest ACSI score in the wireless industry; Billing & Benefits became T-Mobile\'s #1 digital property by engagement',
+           '+204% YoY one-time payment completion; +76% recurring setup; +23% CLV in 12 months',
+           '3 PMs promoted to Senior; 3 interns converted to full-time; internal Transformer award for largest digital impact'],
+    tieIn: 'April 21 was a bill-trust event; bill-trust at consumer scale is what I spent five years owning at T-Mobile.' },
+  { era: 'Apr 2022 – Sep 2023',
+    company: 'Amazon',
+    role: 'Senior Manager, Prime Worldwide Engagement (L7 PMT)',
+    relevance: 'Led the Prime Worldwide Engagement platform: activation-driven CLV through multi-benefit engagement in the 0-90 day window across 26 country-level teams.',
+    wins: ['Built PM team from 1 to 5 Senior PMTs in a hub-and-spoke model influencing 26 country-level teams',
+           '+23% renewals and +17% shopping activity at peak; 30M+ monthly benefit utilizations; >1B monthly impressions',
+           'Authored the PR/FAQ for the global engagement platform; established measurement strategy, review rhythms, and governance mechanisms'],
+    tieIn: 'This is the activation mechanism §06 anchors on, with team-leadership and operating-cadence work to match.' }
+];
+
+/* ============================================================
+   HELPER COMPONENTS
+   ============================================================ */
+
+const Eyebrow = ({ children, className = '' }) => (
+  <div className={`font-mono text-[10px] tracking-[0.2em] uppercase text-stone-500 ${className}`}>
+    {children}
+  </div>
+);
+
+const SectionHeader = ({ num, label, title, lead }) => (
+  <div className="mb-12">
+    <div className="flex items-baseline gap-4 mb-6">
+      <span className="font-mono text-xs text-stone-600 tabular-nums">§ {num}</span>
+      <Eyebrow>{label}</Eyebrow>
+    </div>
+    <h2 className="font-display text-4xl md:text-5xl lg:text-6xl text-stone-100 leading-[1.05] mb-6 max-w-4xl">
+      {title}
+    </h2>
+    {lead && (
+      <p className="font-body text-lg md:text-xl text-stone-400 leading-relaxed max-w-3xl">
+        {lead}
+      </p>
+    )}
+  </div>
+);
+
+const PullQuote = ({ children, attribution }) => (
+  <div className="my-8 pl-6 border-l-2 border-accent/60">
+    <p className="font-display italic text-2xl md:text-3xl text-stone-200 leading-snug">
+      "{children}"
+    </p>
+    {attribution && (
+      <div className="font-mono text-xs text-stone-500 mt-3 tracking-wider">
+        — {attribution}
+      </div>
+    )}
+  </div>
+);
+
+/* ============================================================
+   HERO
+   ============================================================ */
+
+const Hero = () => (
+  <section className="relative pt-20 pb-28 px-6 md:px-12 lg:px-20 overflow-hidden grain-overlay">
+    <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
+         style={{ backgroundImage: 'linear-gradient(rgba(20,20,19,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(20,20,19,0.5) 1px, transparent 1px)', backgroundSize: '80px 80px' }} />
+
+    <div className="relative max-w-6xl mx-auto">
+      <div className="flex items-center gap-3 mb-10 anim-fade-up">
+        <div className="w-2 h-2 rounded-full bg-accent anim-pulse-soft" />
+        <Eyebrow>Monetization PM Brief · Prepared for Anthropic · May 2026</Eyebrow>
+      </div>
+
+      <h1 className="font-display font-semibold text-4xl md:text-6xl lg:text-7xl text-stone-100 leading-[1.02] mb-10 anim-fade-up max-w-5xl" style={{animationDelay: '0.1s'}}>
+        Claude is moving from an answer surface toward a software-creation surface, and the open monetization question is which SaaS workflows move into a build-and-run subscription, and which still require a partner, platform, or human operator.
+      </h1>
+
+      <div className="max-w-3xl space-y-5 text-stone-300 font-body text-lg leading-relaxed anim-fade-up" style={{animationDelay: '0.2s'}}>
+        <p>
+          Prepared by <span className="text-stone-100">Kelvin Zee</span> for the Product Manager, Monetization application at Anthropic. Eighteen years in consumer subscription product. T-Mobile postpaid packaging through the metered-to-unlimited transition (T-Mobile ONE, JUMP! attach economics, postpaid base 56.8M to 75.6M). Billing & Benefits transformation associated with Mintel Best Wireless Billing 2019; +204% YoY payment completion, +76% recurring setup, +23% CLV in 12 months. At Prime: Worldwide Engagement platform, +23% renewals at peak, &gt;1B monthly impressions; PM team scaled 1 to 5 across 26 country-level teams.
+        </p>
+        <p>
+          This brief is not a claim that every SaaS category gets replaced. It is a set of hypotheses to test about whether Claude can help individuals, small businesses, midsize teams, and enterprise functions build, deploy, and run customer-specific tools they would otherwise rent through monthly, annual, or per-seat SaaS products. The useful question is which workflows can move into a Claude-centered build-and-run subscription, and which still require a partner, platform, or human operator.
+        </p>
+        <p className="text-stone-300">
+          <span className="font-mono text-xs tracking-widest uppercase text-accent/80 block mb-2">If you only read three lines</span>
+          Claude appears to be moving from an answer surface toward a software creation surface: describe the workflow, generate the interface, build the logic, connect the data, and deploy the result. The spend shift only happens if Claude or a bundled partner solves the layer SaaS vendors hide: hosting, auth, permissions, reliability, support, rollback, and cost visibility. The open opportunity is to test which workflows can move from rented SaaS seats into a Claude-centered build-and-run subscription, and which ones should remain prototypes, copilots, or human-approved tools.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-stone-800/60 mt-16 border border-stone-800/60 anim-fade-up" style={{animationDelay: '0.3s'}}>
+        {HERO_STATS.map((stat, i) => (
+          <div key={i} className="bg-stone-950 p-6 md:p-8">
+            <div className="font-display text-3xl md:text-4xl text-accent num-display mb-2">{stat.num}</div>
+            <div className="text-stone-200 text-sm mb-1">{stat.label}</div>
+            <div className="font-mono text-[10px] text-stone-500 tracking-wide">{stat.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 3-tier reading navigator */}
+      <div className="mt-16 grid md:grid-cols-3 gap-px bg-stone-800/60 border border-stone-800/60 anim-fade-up" style={{animationDelay: '0.35s'}}>
+        {[
+          { tag: '3-minute read', heading: 'The thesis', body: 'This page only: H1, four stats, three-line summary.' },
+          { tag: '15-minute read', heading: 'Validation path', body: 'Add §08 Hypotheses, §10 Framework, §11 First 90 Days. The reasoning and the sequencing.' },
+          { tag: 'Full brief', heading: 'Deep read', body: 'All thirteen sections: setup, analogies, current architecture, field, segments, interactive sandbox, open questions.' }
+        ].map((row, i) => (
+          <div key={i} className="bg-stone-950 p-6">
+            <Eyebrow className="mb-3 text-accent/80">{row.tag}</Eyebrow>
+            <div className="font-display text-lg text-stone-100 mb-2">{row.heading}</div>
+            <p className="font-body text-sm text-stone-400 leading-relaxed">{row.body}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-16 flex items-center gap-3 text-stone-500 anim-fade-up" style={{animationDelay: '0.4s'}}>
+        <ArrowDown size={16} className="anim-pulse-soft" />
+        <span className="font-mono text-xs tracking-widest uppercase">Begin brief</span>
+      </div>
+    </div>
+  </section>
+);
+
+/* ============================================================
+   SETUP — three context cards
+   ============================================================ */
+
+const SetupSection = () => (
+  <section className="px-6 md:px-12 lg:px-20 py-24 border-t border-stone-800/60 grain-overlay">
+    <div className="max-w-6xl mx-auto">
+      <SectionHeader
+        num="02"
+        label="The Setup"
+        title="Three forces are reshaping what a Claude subscription is actually buying: a moving product surface, a hidden runtime stack, and a boundary question about which workflows can credibly displace SaaS."
+        lead="These forces explain why the same April 21 Pro-tier incident reads as a tactical packaging issue under one thesis and a structural runtime question under another. The cards below name each force and the public evidence that brings it forward."
+      />
+      <div className="grid md:grid-cols-3 gap-px bg-stone-800/60 border border-stone-800/60">
+        {SETUP_CARDS.map((card, i) => (
+          <div key={i} className="bg-stone-950 p-8 md:p-10 relative">
+            <Eyebrow className="mb-6 text-accent/80">{card.tag}</Eyebrow>
+            <h3 className="font-display text-2xl md:text-3xl text-stone-100 leading-tight mb-5">{card.head}</h3>
+            <p className="font-body text-stone-400 leading-relaxed mb-6">{card.body}</p>
+            <div className="font-mono text-[11px] text-stone-500 leading-relaxed pt-5 border-t border-stone-800/80">{card.stat}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+);
+
+/* ============================================================
+   HYPOTHESES — Four-lens hypothesis frame (the new pattern)
+   ============================================================ */
+
+/* ============================================================
+   §03 ANALOGY — Build-your-own runtime arc
+   ============================================================ */
+
+const RuntimeArcTimeline = () => {
+  const [active, setActive] = useState(4); // default to the pivot phase
+  const phase = RUNTIME_PHASES[active];
+  return (
+    <div>
+      {/* Phase ribbon */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-px bg-stone-800/60 border border-stone-800/60 mb-px">
+        {RUNTIME_PHASES.map((p, i) => {
+          const isActive = i === active;
+          return (
+            <button
+              key={p.id}
+              onClick={() => setActive(i)}
+              className={`bg-stone-900 p-5 text-left transition-colors hover:bg-stone-850 ${isActive ? 'ring-inset-emerald' : ''}`}
+            >
+              <div className="font-mono text-[10px] tracking-widest uppercase text-stone-400 mb-2 flex items-center gap-2">
+                <span>{p.period}</span>
+                {p.isPivot && <span className="inline-flex items-center gap-1 text-accent"><span className="w-1.5 h-1.5 rounded-full bg-accent" /> pivot</span>}
+              </div>
+              <div className={`font-display text-base ${isActive ? 'text-accent' : 'text-stone-100'}`}>
+                {p.label}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      {/* Detail block — buyer side and economic side */}
+      <div className="grid md:grid-cols-2 gap-px bg-stone-800/60 border-x border-b border-stone-800/60">
+        <div className="bg-stone-900 p-7 md:p-8">
+          <div className="font-mono text-[10px] tracking-widest uppercase text-accent/80 mb-3">Buyer side</div>
+          <p className="font-body text-stone-200 text-base leading-relaxed">{phase.buyer}</p>
+        </div>
+        <div className="bg-stone-900 p-7 md:p-8">
+          <div className="font-mono text-[10px] tracking-widest uppercase text-accent/80 mb-3">Economic side</div>
+          <p className="font-body text-stone-200 text-base leading-relaxed">{phase.economic}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const WorksBreaksPanel = () => (
+  <div className="grid md:grid-cols-2 gap-10 mt-14">
+    <div>
+      <div className="flex items-center gap-2 mb-5">
+        <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+        <h3 className="font-mono text-xs tracking-widest uppercase text-accent">Where it transfers</h3>
+      </div>
+      <ul className="space-y-3.5 font-body text-stone-300 text-base leading-relaxed">
+        {WORKS_BREAKS.works.map((b, i) => (
+          <li key={i} className="flex gap-3">
+            <span className="text-accent mt-1 flex-shrink-0">·</span>
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+    <div>
+      <div className="flex items-center gap-2 mb-5">
+        <span className="w-1.5 h-1.5 rounded-full bg-warning" />
+        <h3 className="font-mono text-xs tracking-widest uppercase text-warning">Where it breaks</h3>
+      </div>
+      <ul className="space-y-3.5 font-body text-stone-300 text-base leading-relaxed">
+        {WORKS_BREAKS.breaks.map((b, i) => (
+          <li key={i} className="flex gap-3">
+            <span className="text-warning mt-1 flex-shrink-0">·</span>
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+);
+
+const AnalogySection = () => (
+  <section className="grain-overlay relative border-t border-stone-800/60 py-24 md:py-32 px-6 md:px-12 lg:px-20 max-w-7xl mx-auto">
+    <SectionHeader
+      num="03"
+      label="The Analogy"
+      title="Build-your-own runtimes have repeatedly absorbed the long tail of SaaS workflows, from Excel to Notion. The question is how big a bite the AI-native generation takes, and on whose runtime."
+      lead="Used as a pattern-recognition lens, the build-your-own arc transfers cleanly. Used as a literal prediction of which categories displace and on what timeline, it does not. The five phases below trace what changed for buyers and what changed for economics; the panel after names where the analogy works and where it breaks."
+    />
+    <RuntimeArcTimeline />
+    <WorksBreaksPanel />
+    <div className="mt-14 max-w-3xl">
+      <PullQuote>
+        What every generation of build-your-own runtime has demonstrated is that the long tail moves first, the regulated middle moves slowly, and the audited high-end barely moves. Excel absorbed personal finance; cloud SaaS reclaimed the operational center; Notion and Airtable picked off project workflows. The AI-native generation will likely take another bite from the long tail, and the monetization question is which bite, how fast, and which partners stitch the hidden stack together credibly enough that the spend actually shifts.
+      </PullQuote>
+    </div>
+    <div className="mt-10 max-w-3xl text-stone-400 font-body text-sm leading-relaxed border-l-2 border-accent/40 pl-5">
+      <span className="font-mono text-[10px] tracking-widest uppercase text-accent/80 block mb-2">Calibrated confidence</span>
+      High confidence as a pattern-recognition lens; build-your-own runtimes have repeatedly absorbed the long tail of SaaS workflows. Medium confidence on the size and speed of the AI-native generation's bite, pending data on which workflows actually move once the hidden stack is solved. Low confidence on which specific partners or which Anthropic-owned surfaces close the gap; that is what §10 and the validation plan are for.
+    </div>
+  </section>
+);
+
+/* ============================================================
+   §04 ARCHITECTURE — Today's monetization architecture
+   ============================================================ */
+
+const ArchitectureSection = () => (
+  <section className="grain-overlay relative border-t border-stone-800/60 py-24 md:py-32 px-6 md:px-12 lg:px-20 max-w-7xl mx-auto">
+    <SectionHeader
+      num="04"
+      label="Today's Architecture"
+      title="Anthropic's monetization architecture today is a seven-tier subscription ladder, five public product surfaces, and a build-and-run runtime stack whose hidden layers are partly first-party, partly partner-stitched, and partly unsolved."
+      lead="What follows maps the architecture as it stands in May 2026, so the hypotheses in §08 are tested against the actual structure rather than against memory or marketing copy. The structural tensions visible here are where build-and-run displacement either runs or stalls."
+    />
+
+    {/* Body 1 — The subscription ladder */}
+    <div className="mb-20">
+      <h3 className="font-mono text-xs tracking-widest uppercase text-accent mb-6 flex items-center gap-2">
+        <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+        The subscription ladder
+      </h3>
+      <div className="border border-stone-800/60 bg-stone-900">
+        {/* Header row */}
+        <div className="grid grid-cols-12 gap-px bg-stone-800/60 font-mono text-[10px] tracking-widest uppercase text-stone-400">
+          <div className="bg-stone-900 p-4 col-span-2">Tier</div>
+          <div className="bg-stone-900 p-4 col-span-2">Price</div>
+          <div className="bg-stone-900 p-4 col-span-2">Audience</div>
+          <div className="bg-stone-900 p-4 col-span-3">Surfaces accessible</div>
+          <div className="bg-stone-900 p-4 col-span-3">Notable constraint</div>
+        </div>
+        {/* Data rows */}
+        {PRICING_TIERS.map((t, i) => (
+          <div key={t.tier} className="grid grid-cols-12 gap-px bg-stone-800/60 border-t border-stone-800/60 font-body text-stone-200 text-sm md:text-[15px]">
+            <div className="bg-stone-900 p-4 col-span-2 font-display text-stone-100">{t.tier}</div>
+            <div className="bg-stone-900 p-4 col-span-2 font-mono text-accent text-[13px]">{t.price}</div>
+            <div className="bg-stone-900 p-4 col-span-2">{t.audience}</div>
+            <div className="bg-stone-900 p-4 col-span-3">{t.surfaces}</div>
+            <div className="bg-stone-900 p-4 col-span-3 text-stone-300">{t.constraint}</div>
+          </div>
+        ))}
+      </div>
+      <p className="font-mono text-[10px] tracking-widest uppercase text-stone-500 mt-3">Sources: claude.com/pricing, support.claude.com (May 2026)</p>
+      <p className="font-body text-stone-300 text-base leading-relaxed mt-7 max-w-3xl">
+        The ladder has a 5× jump from Pro at $20 to Max 5× at $100 with no intermediate tier, and a structural seam where consumer pricing ends at Max 20× and team pricing restarts at Team Standard at $30 per seat. The April 21 incident, when Claude Code was briefly removed from the $20 Pro tier and reverted within 24 hours, was the architecture's most visible recent stress test. Avasare's April 22 recovery commitment was that future changes affecting subscribers would come from Anthropic directly rather than from a docs screenshot on X. That commitment is now part of the architecture as well, even though it does not appear on a pricing page.
+      </p>
+    </div>
+
+    {/* Body 2 — The product surfaces */}
+    <div className="mb-20">
+      <h3 className="font-mono text-xs tracking-widest uppercase text-accent mb-6 flex items-center gap-2">
+        <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+        The product surfaces
+      </h3>
+      <p className="font-body text-stone-300 text-base leading-relaxed mb-6 max-w-3xl">
+        Five public surfaces sit on top of the ladder, each with a different consumption profile and a different displacement target.
+      </p>
+      <div className="space-y-4">
+        {PRODUCT_SURFACES.map((s) => (
+          <div key={s.name} className="grid md:grid-cols-12 gap-3 md:gap-6 py-4 border-t border-stone-800/60 first:border-t-0">
+            <div className="md:col-span-3 font-display text-stone-100 text-lg">{s.name}</div>
+            <div className="md:col-span-9 font-body text-stone-300 text-base leading-relaxed">{s.tagline}</div>
+          </div>
+        ))}
+      </div>
+      <p className="font-body text-stone-300 text-base leading-relaxed mt-7 max-w-3xl">
+        Vertical add-ons sit on top of the Enterprise tier: Healthcare (HIPAA-ready, with the Coefficient Bio acquisition extending into life sciences in April 2026) and Financial Services (announced May 5, 2026 with Jamie Dimon at Anthropic's NYC briefing). These are contracted offerings, not self-serve.
+      </p>
+    </div>
+
+    {/* Body 3 — The hidden stack */}
+    <div className="mb-14">
+      <h3 className="font-mono text-xs tracking-widest uppercase text-accent mb-6 flex items-center gap-2">
+        <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+        The hidden stack
+      </h3>
+      <p className="font-body text-stone-300 text-base leading-relaxed mb-6 max-w-3xl">
+        Build-and-run displacement only happens if a credible answer exists for the runtime stack SaaS vendors hide. The map below shows where that answer is first-party today, where it runs through partners, and where it is structurally unsolved.
+      </p>
+      <div className="border border-stone-800/60 bg-stone-900">
+        {/* Header row */}
+        <div className="grid grid-cols-12 gap-px bg-stone-800/60 font-mono text-[10px] tracking-widest uppercase text-stone-400">
+          <div className="bg-stone-900 p-4 col-span-4">Stack layer</div>
+          <div className="bg-stone-900 p-4 col-span-2">Status</div>
+          <div className="bg-stone-900 p-4 col-span-6">Detail</div>
+        </div>
+        {/* Data rows */}
+        {STACK_LAYERS.map((l) => {
+          const statusClass =
+            l.tone === 'first'    ? 'text-accent' :
+            l.tone === 'unsolved' ? 'text-warning' :
+                                    'text-stone-400';
+          return (
+            <div key={l.layer} className="grid grid-cols-12 gap-px bg-stone-800/60 border-t border-stone-800/60 font-body text-stone-200 text-sm md:text-[15px]">
+              <div className="bg-stone-900 p-4 col-span-4 font-display text-stone-100">{l.layer}</div>
+              <div className={`bg-stone-900 p-4 col-span-2 font-mono text-[13px] ${statusClass}`}>{l.status}</div>
+              <div className="bg-stone-900 p-4 col-span-6 text-stone-300">{l.detail}</div>
+            </div>
+          );
+        })}
+      </div>
+      <p className="font-mono text-[10px] tracking-widest uppercase text-stone-500 mt-3">Sources: claude.com/pricing, anthropic.com/news, public partner documentation (May 2026)</p>
+    </div>
+
+    {/* Synthesis */}
+    <div className="max-w-3xl">
+      <p className="font-body text-stone-200 text-lg leading-relaxed mb-10">
+        Two structural tensions show up plainly in this map. The first is that the consumer ladder was built around chat-shaped consumption, while the products on top of it (Code, Cowork, Computer Use) are increasingly workload-shaped; April 21 was the moment that mismatch became visible to the public. The second is that the hidden runtime stack is mostly partner-stitched or unsolved, which means build-and-run is currently strongest for users who already know how to assemble it. Packaging changes can address the first tension. The second requires Anthropic to take a position on which parts of the runtime stack it intends to own directly, which is a product question rather than a pricing one.
+      </p>
+      <PullQuote>
+        What this architecture is selling today is mostly chat capacity, with build-and-run capacity bundled and metered alongside it. What customers are increasingly using it for is workload-shaped, which is a different unit of value. Packaging will eventually need to distinguish the two.
+      </PullQuote>
+    </div>
+  </section>
+);
+
+/* ============================================================
+   §05 FIELD — Frontier, runtime, displacement
+   ============================================================ */
+
+const FieldSection = () => (
+  <section className="grain-overlay relative border-t border-stone-800/60 py-24 md:py-32 px-6 md:px-12 lg:px-20 max-w-7xl mx-auto">
+    <SectionHeader
+      num="05"
+      label="The Field"
+      title="The competitive frame for Anthropic now spans three fronts at once: frontier model performance, AI-native build-and-run runtimes, and the incumbent SaaS workloads either generation might eventually displace."
+      lead="Each front has different rivals, different monetization models, and different structural pressures. The asymmetry that matters most is that Anthropic's two largest peers (OpenAI and Google) have ad-supported monetization alternatives, while Anthropic has explicitly precluded that lever. That asymmetry concentrates the pricing-architecture work in §08."
+    />
+
+    {/* Body 1 — Frontier model competition */}
+    <div className="mb-20">
+      <h3 className="font-mono text-xs tracking-widest uppercase text-accent mb-6 flex items-center gap-2">
+        <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+        Frontier model competition
+      </h3>
+      <div className="border border-stone-800/60 bg-stone-900">
+        {/* Header row */}
+        <div className="grid grid-cols-12 gap-px bg-stone-800/60 font-mono text-[10px] tracking-widest uppercase text-stone-400">
+          <div className="bg-stone-900 p-4 col-span-2">Player</div>
+          <div className="bg-stone-900 p-4 col-span-3">Contest</div>
+          <div className="bg-stone-900 p-4 col-span-2">Monetization</div>
+          <div className="bg-stone-900 p-4 col-span-2">Differentiator</div>
+          <div className="bg-stone-900 p-4 col-span-3">Structural risk for Anthropic</div>
+        </div>
+        {/* Data rows */}
+        {FRONTIER_PLAYERS.map((p) => (
+          <div key={p.player} className={`grid grid-cols-12 gap-px bg-stone-800/60 border-t border-stone-800/60 font-body text-stone-200 text-sm md:text-[15px] ${p.isAnthropic ? 'ring-inset-emerald' : ''}`}>
+            <div className={`bg-stone-900 p-4 col-span-2 font-display ${p.isAnthropic ? 'text-accent' : 'text-stone-100'}`}>{p.player}</div>
+            <div className="bg-stone-900 p-4 col-span-3 text-stone-300">{p.contest}</div>
+            <div className="bg-stone-900 p-4 col-span-2 text-stone-300">{p.monetization}</div>
+            <div className="bg-stone-900 p-4 col-span-2 text-stone-300">{p.differentiator}</div>
+            <div className="bg-stone-900 p-4 col-span-3 text-stone-300">{p.risk}</div>
+          </div>
+        ))}
+      </div>
+      <p className="font-mono text-[10px] tracking-widest uppercase text-stone-500 mt-3">Sources: company filings, public reporting (Reuters, Bloomberg, TechCrunch, May 2026)</p>
+      <p className="font-body text-stone-300 text-base leading-relaxed mt-7 max-w-3xl">
+        OpenAI and Google can both afford to discount or subsidize subscription tiers because ad revenue absorbs some of the cost. Anthropic has explicitly chosen not to take that path. Within frontier model competition, this asymmetry is the single most important structural fact for anyone setting Pro or Max prices.
+      </p>
+    </div>
+
+    {/* Body 2 — Build-and-run runtime competition */}
+    <div className="mb-20">
+      <h3 className="font-mono text-xs tracking-widest uppercase text-accent mb-6 flex items-center gap-2">
+        <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+        Build-and-run runtime competition
+      </h3>
+      <div className="border border-stone-800/60 bg-stone-900">
+        {/* Header row */}
+        <div className="grid grid-cols-12 gap-px bg-stone-800/60 font-mono text-[10px] tracking-widest uppercase text-stone-400">
+          <div className="bg-stone-900 p-4 col-span-2">Player</div>
+          <div className="bg-stone-900 p-4 col-span-3">Contest</div>
+          <div className="bg-stone-900 p-4 col-span-2">Monetization</div>
+          <div className="bg-stone-900 p-4 col-span-2">Distribution</div>
+          <div className="bg-stone-900 p-4 col-span-3">Hidden-stack ownership</div>
+        </div>
+        {/* Data rows */}
+        {RUNTIME_PLAYERS.map((p) => (
+          <div key={p.player} className={`grid grid-cols-12 gap-px bg-stone-800/60 border-t border-stone-800/60 font-body text-sm md:text-[15px] ${p.isReference ? 'opacity-75' : ''}`}>
+            <div className={`bg-stone-900 p-4 col-span-2 font-display ${p.isReference ? 'text-accent' : 'text-stone-100'}`}>
+              {p.player}
+              {p.isReference && <span className="font-body italic text-stone-400 text-xs ml-2">(reference)</span>}
+            </div>
+            <div className="bg-stone-900 p-4 col-span-3 text-stone-300">{p.contest}</div>
+            <div className="bg-stone-900 p-4 col-span-2 text-stone-300">{p.monetization}</div>
+            <div className="bg-stone-900 p-4 col-span-2 text-stone-300">{p.distribution}</div>
+            <div className="bg-stone-900 p-4 col-span-3 text-stone-300">{p.stackOwnership}</div>
+          </div>
+        ))}
+      </div>
+      <p className="font-mono text-[10px] tracking-widest uppercase text-stone-500 mt-3">Sources: company sites, public reporting, partner documentation (May 2026). Claude Code is a reference row for direct comparison, not a competitor to itself.</p>
+      <p className="font-body text-stone-300 text-base leading-relaxed mt-7 max-w-3xl">
+        Two patterns matter here. The most vertically integrated runtime players (Replit Agent, Vercel v0) are the strongest displacement vehicles for non-developer workflows because they solve the hidden stack natively rather than partner-stitching it. And GitHub Copilot Workspace has a distribution advantage Anthropic cannot match through pricing alone, which is why partner distribution (the Vercel marketplace path, Supabase integration, Code's own runtime) probably matters more than pricing-page changes for Code's competitive position.
+      </p>
+    </div>
+
+    {/* Body 3 — The displacement targets */}
+    <div className="mb-14">
+      <h3 className="font-mono text-xs tracking-widest uppercase text-accent mb-6 flex items-center gap-2">
+        <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+        The displacement targets
+      </h3>
+      <p className="font-body text-stone-200 text-lg leading-relaxed max-w-3xl">
+        The incumbent SaaS categories that build-and-run is positioned to displace are not really competitors in the traditional sense; they are the prize. The long-tail per-seat workflows monetized by Salesforce, HubSpot, Zendesk, Notion, Airtable, Asana, Trello, Monday, Coda, and similar vendors represent roughly $200B in global SaaS spend per BetterCloud and Gartner estimates. None of these incumbents is getting displaced wholesale in 2026. What will happen, on the timeline §03 implies, is that the long tail of their surrounding workflows starts moving into Claude-built or Replit-built or v0-built tools, one workflow at a time. Most incumbents will also ship their own AI features and absorb some of that long tail before it leaves. The competitive question for Anthropic is which workflows can credibly move, on whose runtime, and how the spend gets re-priced when they do.
+      </p>
+    </div>
+
+    {/* Pull quote */}
+    <div className="max-w-3xl">
+      <PullQuote>
+        Three competitive races run in parallel: a benchmark race against OpenAI and Google, a workflow-displacement race against Cursor and Replit and v0, and a slower race to pull per-seat SaaS spend into Claude-built tools faster than incumbents can ship their own AI features. The current monetization architecture is calibrated for the first race; the build-and-run thesis depends on the second and third.
+      </PullQuote>
+    </div>
+  </section>
+);
+
+/* ============================================================
+   §06 BUYER SHIFT — Three shifts on the buyer side
+   ============================================================ */
+
+const BuyerShiftSection = () => (
+  <section className="grain-overlay relative border-t border-stone-800/60 py-24 md:py-32 px-6 md:px-12 lg:px-20 max-w-7xl mx-auto">
+    <SectionHeader
+      num="06"
+      label="The Customer Shift"
+      title="The shift on the buyer side operates at three layers below the chat-to-agent surface: a role shift from renter to builder, a budget shift from per-seat to runtime, and a workflow shift from vendor-standardized to team-customized."
+      lead="These three shifts operate at different speeds and on different timelines, but they reinforce each other when they happen together. What a buyer does in the first 30, 60, and 90 days of paying for Claude is probably where one or more of those shifts becomes durable, on the same activation mechanism that anchored multi-benefit engagement at Amazon Prime."
+    />
+
+    {/* Body 1 — Three shifts as 3-card grid (matches SETUP_CARDS pattern) */}
+    <div className="grid md:grid-cols-3 gap-px bg-stone-800/60 border border-stone-800/60 mb-20">
+      {BUYER_SHIFTS.map((s) => (
+        <div key={s.tag} className="bg-stone-900 p-7 md:p-8">
+          <div className="font-mono text-[10px] tracking-widest uppercase text-accent/80 mb-3 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+            {s.tag}
+          </div>
+          <h3 className="font-display text-stone-100 text-xl md:text-2xl leading-snug mb-4">
+            {s.direction}
+          </h3>
+          <p className="font-body text-stone-300 text-base leading-relaxed">
+            {s.body}
+          </p>
+        </div>
+      ))}
+    </div>
+
+    {/* Body 2 — Activation: 0-90 day adoption */}
+    <div className="mb-16 max-w-3xl">
+      <h3 className="font-mono text-xs tracking-widest uppercase text-accent mb-6 flex items-center gap-2">
+        <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+        Activation: what 0-90 day adoption probably looks like
+      </h3>
+      <div className="space-y-5 font-body text-stone-200 text-base leading-relaxed">
+        <p>
+          At Amazon Prime, multi-benefit engagement in the first 30, 60, and 90 days of membership was associated with higher renewals, higher CLV, and a measurable shift toward top-quartile lifetime spend. The mechanism was straightforward: the more benefits a member used early (Video, Music, Reading, Gaming, fast shipping), the more workflows they built around the membership, and the harder it was to leave. The Worldwide Engagement platform we built was associated with +23% renewals and +17% shopping activity at peak, scaled across 26 country-level teams under a hub-and-spoke operating model with explicit governance and measurement.
+        </p>
+        <p>
+          The build-and-run version is plausibly the same mechanism running on different feature surfaces. Days 0-30 are about whether a paying user builds anything at all. Days 30-90 are about whether they build a second and third tool, and whether any of those tools survive a week. Day 90+ is about whether those tools get shared with a teammate, deployed for production use, or quietly abandoned. None of this is yet visible from outside Anthropic. What is visible publicly is that Computer Use, Cowork, and Code are described as documented drivers of new paid subscriptions, which suggests early product-surface adoption already matters more than chat-only behavior. §08 hypothesis 3 tests the activation mechanism directly.
+        </p>
+      </div>
+    </div>
+
+    {/* Body 3 — Where this breaks (visually distinct, warning-blue border) */}
+    <div className="mb-14 max-w-3xl border-l-2 border-warning/60 pl-5 py-1">
+      <div className="font-mono text-[10px] tracking-widest uppercase text-warning mb-3 flex items-center gap-2">
+        <span className="w-1.5 h-1.5 rounded-full bg-warning" />
+        Where this breaks
+      </div>
+      <p className="font-body text-stone-300 text-base leading-relaxed">
+        The Prime analogy carries a different population: consumer membership versus prosumer and enterprise build-and-run. The Prime first-90 mechanism was about benefit awareness; the build-and-run first-90 mechanism is about workflow-build skill. These are different kinds of activation, and a holdout test that would calibrate the difference does not yet exist publicly. The directional claim transfers; the magnitude does not.
+      </p>
+    </div>
+
+    {/* Synthesis */}
+    <div className="max-w-3xl">
+      <p className="font-body text-stone-200 text-lg leading-relaxed mb-10">
+        What ties the three shifts together is the same thing that ties the rest of the brief together: the unit being monetized is changing. The old unit was a chat session at a flat monthly price. The new unit is a workflow with consumption-shaped cost and team-shared deployment. The buyer is changing role, budget, and workflow preference at the same time, and what they do in the first 90 days is probably what determines whether the shift becomes durable.
+      </p>
+      <PullQuote>
+        The renter-to-builder shift is the one Anthropic can most directly shape through product. The per-seat-to-runtime shift is the one finance teams have to learn how to budget. The standardization-to-customization shift is the one organizations have to decide whether they want. All three happen on the activation timeline. That timeline is where monetization architecture has its most direct effect.
+      </PullQuote>
+    </div>
+  </section>
+);
+
+/* ============================================================
+   §07 SEGMENTS — Four buyer segments along the displacement curve
+   ============================================================ */
+
+const SegmentsSection = () => (
+  <section className="grain-overlay relative border-t border-stone-800/60 py-24 md:py-32 px-6 md:px-12 lg:px-20 max-w-7xl mx-auto">
+    <SectionHeader
+      num="07"
+      label="Segments"
+      title="The buyer side of build-and-run breaks into four segments, each with a different builder profile, a different hidden-stack tolerance, and a different packaging fit."
+      lead="The segments below are not customer-facing marketing segments; they are decision-making segments for monetization design. Each has a different question to answer about pricing, packaging, and what the runtime stack has to solve before the displacement actually happens."
+    />
+
+    {/* Body 1 — Segment table */}
+    <div className="mb-14">
+      <div className="border border-stone-800/60 bg-stone-900">
+        {/* Header row — visible at md+ only */}
+        <div className="hidden md:grid grid-cols-12 gap-px bg-stone-800/60 font-mono text-[10px] tracking-widest uppercase text-stone-400">
+          <div className="bg-stone-900 p-4 col-span-2">Segment</div>
+          <div className="bg-stone-900 p-4 col-span-2">Who builds</div>
+          <div className="bg-stone-900 p-4 col-span-2">Displacement target</div>
+          <div className="bg-stone-900 p-4 col-span-2">Hidden-stack needs</div>
+          <div className="bg-stone-900 p-4 col-span-2">Budget shape</div>
+          <div className="bg-stone-900 p-4 col-span-2">Packaging fit</div>
+        </div>
+        {/* Data rows — md+ horizontal grid, sub-md stacked */}
+        {SEGMENTS.map((s) => (
+          <div key={s.segment} className={`border-t border-stone-800/60 ${s.isUnderserved ? 'ring-inset-emerald' : ''}`}>
+            {/* md+ horizontal layout */}
+            <div className="hidden md:grid grid-cols-12 gap-px bg-stone-800/60 font-body text-stone-200 text-sm md:text-[15px]">
+              <div className={`bg-stone-900 p-4 col-span-2 font-display ${s.isUnderserved ? 'text-accent' : 'text-stone-100'}`}>{s.segment}</div>
+              <div className="bg-stone-900 p-4 col-span-2 text-stone-300">{s.whoBuilds}</div>
+              <div className="bg-stone-900 p-4 col-span-2 text-stone-300">{s.displacementTarget}</div>
+              <div className="bg-stone-900 p-4 col-span-2 text-stone-300">{s.stackNeeds}</div>
+              <div className="bg-stone-900 p-4 col-span-2 text-stone-300">{s.budget}</div>
+              <div className="bg-stone-900 p-4 col-span-2 text-stone-300">{s.packaging}</div>
+            </div>
+            {/* Sub-md stacked layout */}
+            <div className="md:hidden bg-stone-900 p-5 space-y-3 font-body text-sm">
+              <div className={`font-display text-lg ${s.isUnderserved ? 'text-accent' : 'text-stone-100'}`}>{s.segment}</div>
+              <div><span className="font-mono text-[10px] tracking-widest uppercase text-stone-400 block mb-1">Who builds</span><span className="text-stone-300">{s.whoBuilds}</span></div>
+              <div><span className="font-mono text-[10px] tracking-widest uppercase text-stone-400 block mb-1">Displacement target</span><span className="text-stone-300">{s.displacementTarget}</span></div>
+              <div><span className="font-mono text-[10px] tracking-widest uppercase text-stone-400 block mb-1">Hidden-stack needs</span><span className="text-stone-300">{s.stackNeeds}</span></div>
+              <div><span className="font-mono text-[10px] tracking-widest uppercase text-stone-400 block mb-1">Budget shape</span><span className="text-stone-300">{s.budget}</span></div>
+              <div><span className="font-mono text-[10px] tracking-widest uppercase text-stone-400 block mb-1">Packaging fit</span><span className="text-stone-300">{s.packaging}</span></div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="font-mono text-[10px] tracking-widest uppercase text-stone-500 mt-3">Sources: claude.com/pricing, BetterCloud State of SaaSOps, public partner documentation (May 2026)</p>
+      <p className="font-body text-stone-300 text-base leading-relaxed mt-7 max-w-3xl">
+        The segments compound across a buyer's career. An individual builder who joins a small business brings their build skill in. An SMB that scales into a midsize team carries its build culture forward. The enterprise function that hires a builder from a midsize team brings the build pattern into a more constrained environment. These transitions are where activation work matters most, because each transition is a moment when a buyer encounters a different version of the hidden stack and a different packaging shape than the one they were used to.
+      </p>
+    </div>
+
+    {/* Body 2 — SMB under-served callout (clay-orange border-left for emphasis) */}
+    <div className="mb-14 max-w-3xl border-l-2 border-accent/60 pl-5 py-1">
+      <div className="font-mono text-[10px] tracking-widest uppercase text-accent mb-3 flex items-center gap-2">
+        <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+        The segment most structurally under-served right now
+      </div>
+      <p className="font-body text-stone-200 text-base leading-relaxed">
+        The SMB segment (1-50 people) is the most structurally under-served by current Anthropic packaging. A 12-person small business doing real workflow displacement faces a binary choice: pay for individual Pro or Max subscriptions across the team and lose admin and shared deployment, or commit to Team Standard at per-seat pricing that does not match the consumption shape of build-and-run. Neither fits cleanly. The same packaging gap visible at the Pro-to-Max cliff for individual heavy-agent users repeats at the SMB transition in a different shape, and the displacement value at SMB scale (a real fraction of those 10-30 SaaS subscriptions) is the largest near-term opportunity in dollar terms relative to acquisition cost.
+      </p>
+    </div>
+
+    {/* Body 3 — Where this breaks (warning-blue border-left, matches §06 pattern) */}
+    <div className="mb-14 max-w-3xl border-l-2 border-warning/60 pl-5 py-1">
+      <div className="font-mono text-[10px] tracking-widest uppercase text-warning mb-3 flex items-center gap-2">
+        <span className="w-1.5 h-1.5 rounded-full bg-warning" />
+        Where this breaks
+      </div>
+      <p className="font-body text-stone-300 text-base leading-relaxed">
+        The four-segment cut is a buyer-side framework, not a workflow-side framework. The same SMB might be doing build-and-run for marketing operations (well-suited) and not for finance close (poorly-suited). Real packaging probably needs to be cross-cut by function as well as by buyer type, which means the segments above understate the complexity of go-to-market design. The framework is useful for monetization architecture decisions; it is not sufficient for product positioning or sales motion design.
+      </p>
+    </div>
+
+    {/* Synthesis closing */}
+    <div className="max-w-3xl">
+      <p className="font-body text-stone-200 text-lg leading-relaxed">
+        The packaging implication across the four segments is a ladder that bends at SMB. Individuals are well-served by the consumer ladder up to the Pro-to-Max cliff. Enterprise functions are well-served by negotiated contracts with vertical add-ons. The middle two segments, small businesses and midsize teams, are where the consumption-shaped, partner-stitched, runtime-aware packaging work has the most room to operate. §08 hypothesis 1 and hypothesis 4 land here directly.
+      </p>
+    </div>
+  </section>
+);
+
+const Hypotheses = () => (
+  <section className="px-6 md:px-12 lg:px-20 py-24 border-t border-stone-800/60 grain-overlay">
+    <div className="max-w-6xl mx-auto">
+      <SectionHeader
+        num="08"
+        label="Four Hypotheses"
+        title="Four hypotheses to pressure-test against Anthropic's internal data: two analytical, one to ship first, one to earn by validation."
+        lead="A and B are the analytical core. C is the highest-confidence near-term move and the data infrastructure every later decision depends on. D is the boldest available structural change, and explicitly downstream of C. None of these is a recommendation to ship today; each names what would resolve it."
+      />
+      <div className="grid md:grid-cols-2 gap-px bg-stone-800/60 border border-stone-800/60">
+        {HYPOTHESES.map((h, i) => (
+          <div key={h.id} className={`bg-stone-950 p-8 md:p-10 relative ${h.isStartingPoint ? 'ring-1 ring-accent/40 ring-inset' : ''}`}>
+            {h.isStartingPoint && (
+              <div className="absolute top-6 right-6">
+                <span className="font-mono text-[10px] tracking-widest uppercase text-accent bg-accent/15 px-2 py-1">★ Start here</span>
+              </div>
+            )}
+            <div className="flex items-baseline gap-3 mb-4">
+              <span className="font-display text-5xl text-stone-700 italic">{h.id}</span>
+              <Eyebrow>Hypothesis</Eyebrow>
+            </div>
+            <h3 className="font-display text-2xl md:text-3xl text-stone-100 mb-4 leading-tight">{h.title}</h3>
+            <p className="font-body text-stone-300 leading-relaxed mb-6 text-base">{h.summary}</p>
+
+            <div className="space-y-4 mb-6 text-sm">
+              <div>
+                <Eyebrow className="mb-2 text-accent/80">Why this might be true</Eyebrow>
+                <p className="font-body text-stone-400">{h.why}</p>
+              </div>
+              <div>
+                <Eyebrow className="mb-2 text-warning/80">Why this might be wrong</Eyebrow>
+                <p className="font-body text-stone-400">{h.risk}</p>
+              </div>
+              <div>
+                <Eyebrow className="mb-2 text-stone-400">What would resolve this</Eyebrow>
+                <p className="font-body text-stone-400">{h.validate}</p>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-stone-800">
+              <Eyebrow className="mb-2">Confidence</Eyebrow>
+              <span className={`font-display text-base italic ${h.confidenceTone === 'emerald' ? 'text-accent' : 'text-warning'}`}>
+                {h.confidence}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+);
+
+/* ============================================================
+   BRIDGE — Why This Profile (career arcs)
+   ============================================================ */
+
+/* ============================================================
+   §09 PROBE — Displacement readiness across buyer × workflow
+   ============================================================ */
+
+// Pure function: takes a buyer and a workflow, returns four metrics + five-stage flow + verdict reference
+const computeOutcome = (buyer, workflow) => {
+  const readiness     = Math.round((workflow.aiSuit * buyer.buildCapacity) / 100);
+  const stackCoverage = Math.min(100, Math.max(0, buyer.stackTolerance + (100 - workflow.stackComplex)));
+  const packagingFit  = PACKAGING_FIT[buyer.budgetShape][workflow.consumptionShape];
+  const trustSafety   = Math.max(0, 100 - Math.max(0, workflow.complianceReq - buyer.complianceCapacity));
+
+  // Five-stage flow: Describe → Generate → Deploy → Run → Monitor
+  const stages = [];
+
+  // Describe — always first-party
+  stages.push({
+    label: 'Describe',
+    status: 'first-party',
+    detail: buyer.id === 'individual' ? 'Claude.ai chat' : 'Cowork or Code'
+  });
+
+  // Generate — depends on AI suitability
+  if (workflow.aiSuit >= 70) {
+    stages.push({ label: 'Generate', status: 'first-party', detail: 'Claude Code or Cowork' });
+  } else if (workflow.aiSuit >= 50) {
+    stages.push({ label: 'Generate', status: 'partner', detail: 'Capable, with limits' });
+  } else {
+    stages.push({ label: 'Generate', status: 'unsupported', detail: 'Capability gap' });
+  }
+
+  // Deploy — workflow stack complexity AND buyer compliance need
+  if (workflow.complianceReq >= 80 && buyer.id !== 'enterprise') {
+    stages.push({ label: 'Deploy', status: 'unsupported', detail: 'No compliant path' });
+  } else if (workflow.complianceReq >= 80) {
+    stages.push({ label: 'Deploy', status: 'partner', detail: 'Vertical contract' });
+  } else if (workflow.stackComplex <= 35) {
+    stages.push({ label: 'Deploy', status: 'first-party', detail: 'Self-host or share-link' });
+  } else if (workflow.stackComplex <= 70) {
+    stages.push({ label: 'Deploy', status: 'partner', detail: 'Vercel marketplace' });
+  } else {
+    stages.push({ label: 'Deploy', status: 'partner', detail: 'Vercel + custom' });
+  }
+
+  // Run — depends on stack coverage and compliance
+  if (workflow.complianceReq >= 80 && buyer.id !== 'enterprise') {
+    stages.push({ label: 'Run', status: 'unsupported', detail: 'Compliance gap' });
+  } else if (stackCoverage >= 80) {
+    stages.push({ label: 'Run', status: 'first-party', detail: 'Anthropic + partner' });
+  } else if (stackCoverage >= 55) {
+    stages.push({ label: 'Run', status: 'partner', detail: 'Supabase + Vercel' });
+  } else {
+    stages.push({ label: 'Run', status: 'unsupported', detail: 'Stack gap' });
+  }
+
+  // Monitor — compliance-aware
+  if (workflow.complianceReq >= 80) {
+    stages.push({
+      label: 'Monitor',
+      status: buyer.id === 'enterprise' ? 'partner' : 'unsupported',
+      detail: buyer.id === 'enterprise' ? 'Vertical audit' : 'No audit trail'
+    });
+  } else if (buyer.id === 'enterprise') {
+    stages.push({ label: 'Monitor', status: 'partner', detail: 'Enterprise dashboard' });
+  } else {
+    stages.push({ label: 'Monitor', status: 'partner', detail: 'Partial: caps only' });
+  }
+
+  return { readiness, stackCoverage, packagingFit, trustSafety, stages };
+};
+
+// MetricBar — animated horizontal bar, used inline in the Probe (MetricMeter helper does not exist in template)
+const MetricBar = ({ label, value }) => (
+  <div>
+    <div className="flex justify-between items-baseline mb-2">
+      <span className="font-mono text-[10px] tracking-widest uppercase text-stone-400">{label}</span>
+      <span className="font-display text-2xl font-semibold text-accent num-display">{value}</span>
+    </div>
+    <div className="h-1 bg-stone-800/60 relative overflow-hidden">
+      <div
+        className="absolute inset-y-0 left-0 bg-accent transition-all duration-500 ease-out"
+        style={{ width: value + '%' }}
+      />
+    </div>
+  </div>
+);
+
+// FlowDiagram — SVG horizontal pipeline with 5 stages; renders status colors per (buyer × workflow)
+const FlowDiagram = ({ stages }) => {
+  const STATUS_FILL = { 'first-party': '#d97757', 'partner': '#faf9f5', 'diy': '#faf9f5', 'unsupported': '#6a9bcc' };
+  const STATUS_STROKE = { 'first-party': '#d97757', 'partner': '#807e77', 'diy': '#b0aea5', 'unsupported': '#6a9bcc' };
+  const STATUS_TEXT = { 'first-party': '#faf9f5', 'partner': '#141413', 'diy': '#6b6862', 'unsupported': '#faf9f5' };
+  const STATUS_LABEL = { 'first-party': '#d97757', 'partner': '#807e77', 'diy': '#b0aea5', 'unsupported': '#6a9bcc' };
+  return (
+    <div className="border border-stone-800/60 bg-stone-900 p-6 overflow-x-auto">
+      <svg viewBox="0 0 1000 230" className="w-full" style={{ minWidth: '600px' }} preserveAspectRatio="xMidYMid meet">
+        {stages.map((s, i) => {
+          const x = 100 + i * 200;
+          return (
+            <g key={i}>
+              {i < stages.length - 1 && (
+                <line x1={x + 22} y1={50} x2={x + 178} y2={50} stroke="#e8e6dc" strokeWidth="1" />
+              )}
+              <circle cx={x} cy={50} r={20} fill={STATUS_FILL[s.status]} stroke={STATUS_STROKE[s.status]} strokeWidth="1.5" />
+              <text x={x} y={55} textAnchor="middle" fill={STATUS_TEXT[s.status]} fontSize="13" fontFamily="Poppins, sans-serif" fontWeight="600">{i + 1}</text>
+              <text x={x} y={92} textAnchor="middle" fill="#141413" fontSize="11" fontFamily="Poppins, sans-serif" fontWeight="500" letterSpacing="1.5">{s.label.toUpperCase()}</text>
+              <text x={x} y={108} textAnchor="middle" fill={STATUS_LABEL[s.status]} fontSize="9" fontFamily="JetBrains Mono, monospace" letterSpacing="1">{s.status}</text>
+              <foreignObject x={x - 85} y={120} width="170" height="100">
+                <div xmlns="http://www.w3.org/1999/xhtml" style={{ fontSize: '11px', color: '#6b6862', fontFamily: "'Lora', Georgia, serif", textAlign: 'center', lineHeight: '1.4' }}>
+                  {s.detail}
+                </div>
+              </foreignObject>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+};
+
+const DisplacementProbe = () => {
+  const [buyerIdx, setBuyerIdx]       = useState(2); // default Midsize
+  const [workflowIdx, setWorkflowIdx] = useState(0); // default Internal dashboard
+
+  const buyer    = BUYER_PROFILES[buyerIdx];
+  const workflow = WORKFLOW_PROFILES[workflowIdx];
+  const verdict  = VERDICTS[buyerIdx][workflowIdx];
+
+  const outcome = useMemo(() => computeOutcome(buyer, workflow), [buyerIdx, workflowIdx]);
+
+  // Verdict border color by template — A/F orange, B/C accent variants, D/E warning
+  const verdictBorder = (verdict.template === 'D' || verdict.template === 'E' || verdict.template === 'B')
+    ? 'border-warning/60' : 'border-accent/60';
+  const verdictTone = (verdict.template === 'D' || verdict.template === 'E' || verdict.template === 'B')
+    ? 'text-warning' : 'text-accent';
+
+  return (
+    <section className="grain-overlay relative border-t border-stone-800/60 py-24 md:py-32 px-6 md:px-12 lg:px-20 max-w-7xl mx-auto">
+      <SectionHeader
+        num="09"
+        label="Probe"
+        title="A two-axis sandbox for which buyer × workflow combinations are displacement-ready under current Anthropic architecture, and which need either packaging change, partner work, or capability progress before they move."
+        lead="Pick a buyer segment and a workflow category. The metrics, the build-and-run flow, and the verdict update together. The intent is to make the structural argument from §06 and §07 tangible: where displacement runs, where it stalls, and what would unblock it."
+      />
+
+      {/* Selectors */}
+      <div className="space-y-6 mb-8">
+        <div>
+          <div className="font-mono text-[10px] tracking-widest uppercase text-stone-400 mb-3">Buyer segment</div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-stone-800/60 border border-stone-800/60">
+            {BUYER_PROFILES.map((b, i) => (
+              <button
+                key={b.id}
+                onClick={() => setBuyerIdx(i)}
+                className={`bg-stone-900 p-4 text-left transition-colors hover:bg-stone-850 ${i === buyerIdx ? 'ring-inset-emerald' : ''}`}
+              >
+                <div className={`font-display text-base ${i === buyerIdx ? 'text-accent' : 'text-stone-100'}`}>{b.label}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div className="font-mono text-[10px] tracking-widest uppercase text-stone-400 mb-3">Workflow category</div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-px bg-stone-800/60 border border-stone-800/60">
+            {WORKFLOW_PROFILES.map((w, i) => (
+              <button
+                key={w.id}
+                onClick={() => setWorkflowIdx(i)}
+                className={`bg-stone-900 p-4 text-left transition-colors hover:bg-stone-850 ${i === workflowIdx ? 'ring-inset-emerald' : ''}`}
+              >
+                <div className={`font-display text-base ${i === workflowIdx ? 'text-accent' : 'text-stone-100'}`}>{w.label}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Caveat */}
+      <p className="font-mono text-[10px] tracking-widest uppercase text-stone-500 mb-12 max-w-3xl">
+        Coefficients are illustrative, calibrated against external comparables. Calibration in production would replace these with real telemetry.
+      </p>
+
+      {/* Two-column main: metrics on the left, flow on the right */}
+      <div className="grid md:grid-cols-2 gap-10 mb-12">
+        {/* Metrics */}
+        <div>
+          <div className="font-mono text-xs tracking-widest uppercase text-accent mb-6 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+            Metrics
+          </div>
+          <div className="space-y-7">
+            <MetricBar label="Displacement readiness" value={outcome.readiness} />
+            <MetricBar label="Hidden stack coverage" value={outcome.stackCoverage} />
+            <MetricBar label="Packaging fit" value={outcome.packagingFit} />
+            <MetricBar label="Trust safety" value={outcome.trustSafety} />
+          </div>
+        </div>
+        {/* Flow */}
+        <div>
+          <div className="font-mono text-xs tracking-widest uppercase text-accent mb-6 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+            Build-and-run flow
+          </div>
+          <FlowDiagram stages={outcome.stages} />
+        </div>
+      </div>
+
+      {/* Verdict */}
+      <div className={`max-w-3xl border-l-2 pl-5 py-1 ${verdictBorder}`}>
+        <div className={`font-mono text-[10px] tracking-widest uppercase mb-3 flex items-center gap-2 ${verdictTone}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${verdict.template === 'D' || verdict.template === 'E' || verdict.template === 'B' ? 'bg-warning' : 'bg-accent'}`} />
+          Verdict · Template {verdict.template} · {verdict.title}
+        </div>
+        <p className="font-body text-stone-200 text-base leading-relaxed">
+          {verdict.text}
+        </p>
+      </div>
+    </section>
+  );
+};
+
+/* ============================================================
+   §10 FRAMEWORK — Illustrative moves, sequenced as hypotheses
+   ============================================================ */
+
+const FrameworkSection = () => (
+  <section className="grain-overlay relative border-t border-stone-800/60 py-24 md:py-32 px-6 md:px-12 lg:px-20 max-w-7xl mx-auto">
+    <SectionHeader
+      num="10"
+      label="Framework I'd Validate"
+      title="Four sequenced moves that operationalize the §08 hypotheses, every parameter illustrative and every move tagged Hypothesis."
+      lead="The framework is meant to be tested, not shipped. Move 1 is the prerequisite that makes the rest legible. Moves 2 through 4 close specific packaging gaps, each with explicit pilot scope and explicit risk."
+    />
+
+    {/* Caveat banner — full bordered box, warning-blue treatment */}
+    <div className="border border-warning/40 bg-warning/[0.04] p-6 md:p-7 mb-14 max-w-3xl">
+      <div className="font-mono text-[10px] tracking-widest uppercase text-warning mb-3 flex items-center gap-2">
+        <span className="w-1.5 h-1.5 rounded-full bg-warning" />
+        Caveat
+      </div>
+      <p className="font-body text-stone-200 text-base leading-relaxed">
+        Every parameter in this section is illustrative, calibrated against external comparables (Vercel, Supabase, telecom workload tiers, AWS marketplace bundles) and should be replaced by internal data before being defended as final. The moves below are sequenced hypotheses, not commitments. The "What I'd test before shipping" column at the end names what would have to land before any of these moves ship.
+      </p>
+    </div>
+
+    {/* Four moves — vertically stacked cards */}
+    <div className="space-y-6 mb-16">
+      {FRAMEWORK_MOVES.map((m) => (
+        <div
+          key={m.id}
+          className={`border bg-stone-900 p-7 md:p-9 relative ${m.isPrerequisite ? 'ring-1 ring-accent/40 ring-inset border-stone-800/60' : 'border-stone-800/60'}`}
+        >
+          {m.isPrerequisite && (
+            <div className="absolute top-6 right-6">
+              <span className="font-mono text-[10px] tracking-widest uppercase text-accent bg-accent/15 px-2 py-1">★ Prerequisite</span>
+            </div>
+          )}
+          <div className="flex items-start gap-5 mb-5">
+            <span className="font-display text-5xl text-accent italic font-semibold leading-none num-display flex-shrink-0">{m.sequencePriority}</span>
+            <div className="pt-1">
+              <Eyebrow className="mb-1.5">Hypothesis · Sequence priority {m.sequencePriority}</Eyebrow>
+              <h3 className="font-display text-2xl md:text-3xl text-stone-100 leading-tight">{m.name}</h3>
+            </div>
+          </div>
+
+          <div className="space-y-4 text-sm md:text-[15px]">
+            <div>
+              <Eyebrow className="mb-1.5 text-stone-400">Type</Eyebrow>
+              <p className="font-body text-stone-300">{m.type}</p>
+            </div>
+            <div>
+              <Eyebrow className="mb-1.5 text-stone-400">Description</Eyebrow>
+              <p className="font-body text-stone-200 leading-relaxed">{m.description}</p>
+            </div>
+            <div className="grid md:grid-cols-2 gap-5">
+              <div>
+                <Eyebrow className="mb-1.5 text-accent/80">Targets</Eyebrow>
+                <p className="font-body text-stone-300">{m.targets}</p>
+              </div>
+              <div>
+                <Eyebrow className="mb-1.5 text-accent/80">Operationalizes</Eyebrow>
+                <p className="font-body text-stone-300">{m.operationalizes}</p>
+              </div>
+            </div>
+            <div className="pt-4 border-t border-stone-800">
+              <Eyebrow className="mb-1.5 text-warning/80">Specific risk</Eyebrow>
+              <p className="font-body text-stone-300 leading-relaxed">{m.specificRisk}</p>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {/* Three closing columns */}
+    <div className="grid md:grid-cols-3 gap-px bg-stone-800/60 border border-stone-800/60">
+      <div className="bg-stone-900 p-7 md:p-8">
+        <div className="font-mono text-[10px] tracking-widest uppercase text-accent mb-5 flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+          What I'd hold constant
+        </div>
+        <ul className="space-y-3 font-body text-stone-300 text-sm leading-relaxed">
+          {HOLD_CONSTANT.map((b, i) => (
+            <li key={i} className="flex gap-3">
+              <span className="text-accent mt-1 flex-shrink-0">·</span>
+              <span>{b}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="bg-stone-900 p-7 md:p-8">
+        <div className="font-mono text-[10px] tracking-widest uppercase text-accent mb-5 flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+          What I'd structurally change
+        </div>
+        <ul className="space-y-3 font-body text-stone-300 text-sm leading-relaxed">
+          {STRUCTURAL_CHANGE.map((b, i) => (
+            <li key={i} className="flex gap-3">
+              <span className="text-accent mt-1 flex-shrink-0">·</span>
+              <span>{b}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="bg-stone-900 p-7 md:p-8">
+        <div className="font-mono text-[10px] tracking-widest uppercase text-warning mb-5 flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-warning" />
+          What I'd test before shipping
+        </div>
+        <ul className="space-y-3 font-body text-stone-300 text-sm leading-relaxed">
+          {TEST_FIRST.map((b, i) => (
+            <li key={i} className="flex gap-3">
+              <span className="text-warning mt-1 flex-shrink-0">·</span>
+              <span>{b}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </section>
+);
+
+/* ============================================================
+   §11 VALIDATION PLAN — 90 days in three phases
+   ============================================================ */
+
+const ValidationPlanSection = () => (
+  <section className="grain-overlay relative border-t border-stone-800/60 py-24 md:py-32 px-6 md:px-12 lg:px-20 max-w-7xl mx-auto">
+    <SectionHeader
+      num="11"
+      label="Validation Plan"
+      title="A 90-day validation plan organized in three phases: instrumentation first, customer interviews second, fake-door tests third. Each phase carries four mechanism-specific actions, sequenced so the data from the prior phase informs the next."
+      lead="The plan deliberately runs in this order. Instrumenting before interviewing keeps the conversations grounded in actual usage. Interviewing before fake-door testing keeps the tests aimed at real friction. Fake-door testing before commit keeps the framework moves in §10 honest."
+    />
+
+    {/* Three phases — vertically stacked */}
+    <div className="space-y-10 mb-16">
+      {VALIDATION_PHASES.map((p) => (
+        <div key={p.id} className="border border-stone-800/60 bg-stone-900 p-7 md:p-9">
+          <div className="flex items-baseline gap-4 mb-7 pb-5 border-b border-stone-800">
+            <span className="font-display text-5xl text-accent italic font-semibold leading-none num-display flex-shrink-0">{p.id.replace('P','')}</span>
+            <div className="pt-1">
+              <Eyebrow className="mb-1.5">{p.phase} · {p.window}</Eyebrow>
+              <h3 className="font-display text-2xl md:text-3xl text-stone-100 leading-tight">{p.label}</h3>
+            </div>
+          </div>
+          <div className="space-y-5">
+            {p.actions.map((a, idx) => (
+              <div key={idx} className="grid grid-cols-12 gap-4 md:gap-6">
+                <div className="col-span-12 md:col-span-3">
+                  <div className="font-mono text-[10px] tracking-widest uppercase text-accent/80 mb-1">Action {idx + 1}</div>
+                  <div className="font-display text-stone-100 text-base md:text-lg leading-snug">{a.name}</div>
+                </div>
+                <div className="col-span-12 md:col-span-9">
+                  <p className="font-body text-stone-300 text-sm md:text-[15px] leading-relaxed">{a.body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {/* What I would not do — full warning-bordered box, mirrors §10 caveat banner pattern */}
+    <div className="border border-warning/40 bg-warning/[0.04] p-6 md:p-8 max-w-4xl">
+      <div className="font-mono text-[10px] tracking-widest uppercase text-warning mb-5 flex items-center gap-2">
+        <span className="w-1.5 h-1.5 rounded-full bg-warning" />
+        What I would not do in the first 90 days
+      </div>
+      <ol className="space-y-4 font-body text-stone-200 text-base leading-relaxed">
+        {WONT_DO.map((item, i) => (
+          <li key={i} className="flex gap-4">
+            <span className="font-mono text-warning text-sm flex-shrink-0 w-6">{i + 1}.</span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+);
+
+/* ============================================================
+   §12 OPEN QUESTIONS — Twelve questions in three thematic groups
+   ============================================================ */
+
+const OpenQuestionsSection = () => (
+  <section className="grain-overlay relative border-t border-stone-800/60 py-24 md:py-32 px-6 md:px-12 lg:px-20 max-w-7xl mx-auto">
+    <SectionHeader
+      num="12"
+      label="Open Questions"
+      title="Twelve questions whose answers would change my read, organized into the three groups where outside-in research runs out: data I cannot see, product strategy I cannot infer, and operating model I cannot map."
+      lead="None of these questions has a confident answer in the brief. Each is something I would want to learn from inside the company before defending any of the framework moves in §10. The shape of the answers will reweight which hypotheses lead and which sequence has to change."
+    />
+
+    <div className="space-y-12 max-w-4xl">
+      {OPEN_QUESTIONS.map((g, gIdx) => (
+        <div key={g.id}>
+          <div className="font-mono text-xs tracking-widest uppercase text-accent mb-7 flex items-center gap-2 pb-4 border-b border-stone-800">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+            Group {gIdx + 1} · {g.label}
+          </div>
+          <div className="space-y-7">
+            {g.questions.map((q, qIdx) => (
+              <div key={qIdx} className="grid grid-cols-12 gap-4 md:gap-6">
+                <div className="col-span-12 md:col-span-1">
+                  <span className="font-display text-3xl text-stone-700 italic font-semibold num-display">{(gIdx * 4) + qIdx + 1}</span>
+                </div>
+                <div className="col-span-12 md:col-span-11">
+                  <h4 className="font-display text-stone-100 text-lg md:text-xl mb-2 leading-snug">{q.title}</h4>
+                  <p className="font-body text-stone-300 text-base leading-relaxed">{q.body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+);
+
+const KelvinBridge = () => (
+  <section className="px-6 md:px-12 lg:px-20 py-24 border-t border-stone-800/60 grain-overlay">
+    <div className="max-w-6xl mx-auto">
+      <SectionHeader
+        num="13"
+        label="Why This Profile"
+        title="Three career arcs map directly to the three load-bearing problems this role is asking someone to lead: a packaging transition, a bill-trust surface, and an activation mechanism."
+        lead="Each arc is a transition I have already lived, in a different industry but the same shape. None is a perfect match for AI-native frontier work. All three share the structural problem this role exists to solve."
+      />
+      <div className="grid md:grid-cols-3 gap-px bg-stone-800/60 border border-stone-800/60">
+        {CAREER_ARCS.map((card, i) => (
+          <div key={i} className="bg-stone-950 p-8">
+            <Eyebrow className="mb-4">{card.era}</Eyebrow>
+            <div className="font-display text-2xl text-stone-100 mb-1">{card.company}</div>
+            <div className="font-mono text-xs text-stone-500 mb-5">{card.role}</div>
+            <div className="font-body italic text-accent/90 mb-5 text-sm">▸ {card.relevance}</div>
+            <ul className="space-y-2.5 mb-6">
+              {card.wins.map((w, j) => (
+                <li key={j} className="font-body text-sm text-stone-300 leading-relaxed flex gap-2">
+                  <span className="text-stone-600 flex-shrink-0">·</span>
+                  <span>{w}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="pt-5 border-t border-stone-800 font-body text-sm text-stone-400 italic leading-relaxed">
+              {card.tieIn}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-16 grid md:grid-cols-2 gap-12 max-w-5xl">
+        <div>
+          <Eyebrow className="mb-4">Oct 2023 – present</Eyebrow>
+          <h3 className="font-display text-2xl text-stone-100 mb-4">Independent study and career break</h3>
+          <p className="font-body text-stone-300 leading-relaxed mb-4">
+            Stepped away from full-time work in October 2023 to support my family through significant health challenges. Caregiving has stabilized, and I am returning to full-time product leadership. The break was real and I am not going to dress it up as a sabbatical or a strategic pause; it was a family obligation, taken intentionally, and now complete.
+          </p>
+          <p className="font-body text-stone-300 leading-relaxed">
+            What I built in parallel is hands-on fluency with the AI tooling this role builds the monetization architecture for. Claude Code daily, Codex and ChatGPT alongside, applied to real product and engineering problems rather than to demos. The practitioner's view (where LLM tooling ships cleanly and where it still breaks) is how I formed the build-and-run thesis the rest of this brief defends.
+          </p>
+        </div>
+        <div>
+          <Eyebrow className="mb-4">Why this fit</Eyebrow>
+          <p className="font-body text-stone-300 leading-relaxed mb-4">
+            Three career arcs map to three load-bearing problems this role is asking someone to lead. T-Mobile postpaid packaging is the metered-to-unlimited transition Anthropic is now navigating in reverse, with JUMP! attach and T-Mobile ONE as the closest analogs to the consumer-ladder work in §10. Billing &amp; Benefits is bill-trust at consumer scale, the surface April 21 stress-tested and the surface §08 hypothesis C is built around. Prime Worldwide Engagement is the 0-90 day activation mechanism §06 anchors on, plus the team-leadership and operating-cadence work to scale a PM org around it.
+          </p>
+          <p className="font-body text-stone-300 leading-relaxed">
+            I would want to test the hypotheses in §08 against actual cohort data, not against public signal. The §11 validation plan and §12 open questions are how I would do that. The brief is a starting point for the conversation, not a finished position.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+);
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+
+const Footer = () => (
+  <footer className="px-6 md:px-12 lg:px-20 py-16 border-t border-stone-800/60 grain-overlay">
+    <div className="max-w-6xl mx-auto">
+      <div className="editorial-rule mb-12" />
+      <div className="grid md:grid-cols-3 gap-8 mb-10">
+        <div>
+          <Eyebrow className="mb-3">Prepared by</Eyebrow>
+          <div className="font-display text-2xl text-stone-100 mb-1">Kelvin Zee</div>
+          <div className="font-mono text-xs text-stone-500 mb-3">Subscription packaging · Bill-trust · Activation · Seattle, WA</div>
+          <div className="font-mono text-xs text-stone-500">Kelvinz@gmail.com · linkedin.com/in/kelvinz</div>
+        </div>
+        <div>
+          <Eyebrow className="mb-3">Prepared for</Eyebrow>
+          <div className="font-body text-stone-300">Anthropic</div>
+          <div className="font-mono text-xs text-stone-500 mt-2">Product Manager, Monetization · May 2026</div>
+        </div>
+        <div>
+          <Eyebrow className="mb-3">Sources &amp; method</Eyebrow>
+          <div className="font-body text-xs text-stone-400 leading-relaxed">
+            Sacra, TechCrunch, Reuters, Bloomberg, The Register, Simon Willison's analysis, claude.com/pricing, support.claude.com, anthropic.com/news, BetterCloud State of SaaSOps, public partner documentation (Vercel, Supabase), and post-April 21 public discussion on X. Verified May 7, 2026; figures may move quickly in this category.
+          </div>
+        </div>
+      </div>
+      <div className="font-mono text-[10px] text-stone-600 tracking-widest pt-8 border-t border-stone-900 flex justify-between">
+        <span>§ END OF BRIEF</span>
+        <span>v 1.0 · May 7, 2026</span>
+      </div>
+    </div>
+  </footer>
+);
+
+/* ============================================================
+   MAIN APP + MOUNT
+   Add other sections here as you build them.
+   ============================================================ */
+
+const StrategyBrief = () => (
+  <div className="min-h-screen bg-stone-950 text-stone-100 font-body" style={{ background: '#faf9f5' }}>
+    <Hero />
+    <SetupSection />
+    <AnalogySection />
+    <ArchitectureSection />
+    <FieldSection />
+    <BuyerShiftSection />
+    <SegmentsSection />
+    <Hypotheses />
+    <DisplacementProbe />
+    <FrameworkSection />
+    <ValidationPlanSection />
+    <OpenQuestionsSection />
+    <KelvinBridge />
+    <Footer />
+  </div>
+);
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<StrategyBrief />);
+
+</script>
+</body>
+</html>
