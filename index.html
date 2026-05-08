@@ -117,7 +117,7 @@ const AlertTriangle = (p) => <I {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l
 
 // Hero stats — 4 headline numbers
 const HERO_STATS = [
-  { num: '$30B', label: 'Annualized revenue, April 2026', sub: 'Sacra · ~$22B net by alt accounting' },
+  { num: '$44B', label: 'Annualized revenue, May 2026', sub: 'Amodei disclosures · gross accounting basis' },
   { num: '$2.5B', label: 'Claude Code ARR by Feb 2026', sub: 'Anthropic public messaging' },
   { num: '2×', label: 'Paid subscriptions doubled in 2026', sub: 'TechCrunch, March 2026' },
   { num: '5×', label: 'Pro-to-Max price gap, no intermediate tier', sub: 'claude.com/pricing' }
@@ -136,7 +136,7 @@ const SETUP_CARDS = [
   { tag: 'The Boundary',
     head: 'The monetization question is which workflows actually move from rented SaaS seats into build-and-run, and which stay where they are.',
     body: 'Internal dashboards, custom forms, lightweight CRM views, ad-hoc reporting, and one-off automations look like obvious build-and-run candidates. Multi-tenant compliance workloads, regulated data handling, deep enterprise SSO, and human-in-the-loop approval chains do not. The line between displacing and not-displacing is where the product roadmap and the packaging roadmap have to agree.',
-    stat: 'Mid-market companies run ~130 SaaS apps each; the long tail is the displacement target (BetterCloud State of SaaSOps)' }
+    stat: 'Mid-market companies run more than 100 SaaS apps each by various recent BetterCloud and Productiv estimates; the long tail is the displacement target' }
 ];
 
 // Analogy section — build-your-own runtime arc, five phases with the AI-native pivot
@@ -215,7 +215,7 @@ const FRONTIER_PLAYERS = [
     contest: 'Mass-market chat, code, voice, agents (ChatGPT Plus, Pro, Business, Enterprise)',
     monetization: 'Subscriptions + ads (Plus, Search rollouts 2025-2026) + API + Enterprise',
     differentiator: 'Distribution scale; ~900M ChatGPT WAU per public reporting',
-    risk: 'Cross-subsidy from ad revenue can support lower subscription price points' },
+    risk: 'Cross-subsidy from ad revenue can support lower subscription price points. On April 21, OpenAI\'s Tibo Sottiaux explicitly committed to keeping Codex on Free and $20 Plus, posted same day as the Pro-tier Code incident' },
   { player: 'Google (Gemini)',
     contest: 'Workspace integration, Search distribution, Android',
     monetization: 'Workspace seats + ads + GCP bundling',
@@ -224,7 +224,7 @@ const FRONTIER_PLAYERS = [
   { player: 'Anthropic',
     contest: 'Frontier reasoning + Claude Code + Cowork + Computer Use + verticals',
     monetization: 'Subscriptions + API + Enterprise; explicit no-ads commitment',
-    differentiator: 'Brand trust, transparent docs, build-and-run posture',
+    differentiator: 'Brand trust, transparent docs, build-and-run posture; 1,000+ enterprise customers spending $1M+/year, doubled from 500 at Series G two months prior',
     risk: 'Pricing architecture is the only structural lever; smaller margin for missteps',
     isAnthropic: true },
   { player: 'Other frontier (x.AI, Chinese labs, Mistral, Cohere)',
@@ -237,8 +237,8 @@ const FRONTIER_PLAYERS = [
 const RUNTIME_PLAYERS = [
   { player: 'Cursor',
     contest: 'Developer build; AI-native IDE',
-    monetization: '$20/mo Pro, $40/mo Business, usage credits',
-    distribution: 'Word-of-mouth in developer community; per public reporting, ARR has crossed $300M',
+    monetization: '$20/mo Pro, $60/mo Pro+, $200/mo Ultra, $40/seat Teams; usage credits',
+    distribution: 'Word-of-mouth in developer community; per Bloomberg and Sacra, ARR reportedly crossed $2B by early 2026, near-peer with Claude Code',
     stackOwnership: 'Wraps existing IDE (VSCode fork); developer\'s own deployment stack' },
   { player: 'Replit Agent',
     contest: 'Low-code build-and-deploy for non-developers',
@@ -549,7 +549,7 @@ const HYPOTHESES = [
     id: 'A',
     title: 'A meaningful share of long-tail per-seat SaaS spend may move into Claude subscriptions for specific workflow categories (internal dashboards, custom forms, lightweight CRM views, ad-hoc reporting, one-off automations), though not for compliance-heavy or audit-heavy ones.',
     summary: 'The build-your-own runtime pattern (Excel, Access, Notion, Airtable) has repeatedly absorbed the long tail of SaaS workflows, generation by generation. Claude is plausibly the next iteration of that pattern. The question is which workflow categories actually move in 2026-2027, on whose runtime, and which stay where they are.',
-    why: 'The displacement is recurring, not novel. The cost of building one-off tools has fallen by orders of magnitude with each generation of build-your-own runtime, and AI-native generation removes the technical-skill barrier that kept the previous generations bounded to relatively-technical users. Computer Use, Cowork, and Code are documented drivers of new paid subscriptions, which suggests the pattern is already starting at the consumer and prosumer scale. Mid-market companies running ~130 SaaS apps each have a real long-tail surface that can plausibly move.',
+    why: 'The displacement is recurring, not novel. The cost of building one-off tools has fallen by orders of magnitude with each generation of build-your-own runtime, and AI-native generation removes the technical-skill barrier that kept the previous generations bounded to relatively-technical users. Computer Use, Cowork, and Code are documented drivers of new paid subscriptions, which suggests the pattern is already starting at the consumer and prosumer scale. Mid-market companies running more than 100 SaaS apps each have a real long-tail surface that can plausibly move.',
     risk: 'The previous generations of build-your-own runtime did not displace category-defining vertical SaaS (Salesforce, Workday, Zendesk) wholesale, and there is no reason to assume Claude will be different. AI-native build also has trust constraints Excel did not have: hallucination risk, audit trail problems, and the inability to retrain workflows on internal compliance contexts. The displacement could turn out to be smaller than the analogy suggests, or much slower (5-10 years rather than 2-3).',
     validate: 'Cohort analysis: track build-and-run paying users and ask, by user-month, how many Claude-built tools they use against how many SaaS subscriptions they keep active. Customer development with paying SMB customers about which subscriptions they have already cancelled or downgraded since starting Claude. A controlled survey across paying users of which workflow categories they have moved fully to Claude, partially, or not at all. Look at retention and expansion in cohorts that hit certain build-volume thresholds in their first 90 days (ties to §06 activation).',
     confidence: 'High as a directional pattern claim (the displacement arc is recurring and the pattern transfers). Medium on the timeline (the magnitude question of "how much, how fast" is genuinely open). Low on specific category prediction (some of the categories named will move and others will not, and the order is hard to predict from outside).',
@@ -1184,7 +1184,7 @@ const SegmentsSection = () => (
           </div>
         ))}
       </div>
-      <p className="font-mono text-[10px] tracking-widest uppercase text-stone-500 mt-3">Sources: claude.com/pricing, BetterCloud State of SaaSOps, public partner documentation (May 2026)</p>
+      <p className="font-mono text-[10px] tracking-widest uppercase text-stone-500 mt-3">Sources: claude.com/pricing, BetterCloud and Productiv SaaSOps research, public partner documentation (May 2026)</p>
       <p className="font-body text-stone-300 text-base leading-relaxed mt-7 max-w-3xl">
         The segments compound across a buyer's career. An individual builder who joins a small business brings their build skill in. An SMB that scales into a midsize team carries its build culture forward. The enterprise function that hires a builder from a midsize team brings the build pattern into a more constrained environment. These transitions are where activation work matters most, because each transition is a moment when a buyer encounters a different version of the hidden stack and a different packaging shape than the one they were used to.
       </p>
@@ -1794,13 +1794,13 @@ const Footer = () => (
         <div>
           <Eyebrow className="mb-3">Sources &amp; method</Eyebrow>
           <div className="font-body text-xs text-stone-400 leading-relaxed">
-            Sacra, TechCrunch, Reuters, Bloomberg, The Register, Simon Willison's analysis, claude.com/pricing, support.claude.com, anthropic.com/news, BetterCloud State of SaaSOps, public partner documentation (Vercel, Supabase), and post-April 21 public discussion on X. Verified May 7, 2026; figures may move quickly in this category.
+            Sacra, SemiAnalysis, TechCrunch, Reuters, Bloomberg, The Register, Simon Willison's analysis, claude.com/pricing, support.claude.com, anthropic.com/news, BetterCloud and Productiv SaaSOps research, public partner documentation (Vercel, Supabase), and post-April 21 public discussion on X. Verified May 8, 2026; figures may move quickly in this category.
           </div>
         </div>
       </div>
       <div className="font-mono text-[10px] text-stone-600 tracking-widest pt-8 border-t border-stone-900 flex justify-between">
         <span>§ END OF BRIEF</span>
-        <span>v 1.0 · May 7, 2026</span>
+        <span>v 1.1 · May 8, 2026</span>
       </div>
     </div>
   </footer>
